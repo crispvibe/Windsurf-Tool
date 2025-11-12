@@ -185,14 +185,14 @@ ipcMain.handle('clear-windsurf', async () => {
 // 切换账号(完整版 - 重置+自动登录)
 ipcMain.handle('switch-account', async (event, account) => {
   try {
-    const WindsurfManager = require('./src/windsurfManager');
+    const WindsurfManagerFactory = require('./src/windsurfManagerFactory');
     
     // 创建日志回调函数
     const logCallback = (message) => {
       mainWindow.webContents.send('switch-log', message);
     };
     
-    const manager = new WindsurfManager(logCallback);
+    const manager = WindsurfManagerFactory.create(logCallback);
     
     // 1. 完整重置Windsurf
     mainWindow.webContents.send('switch-progress', { step: 1, message: '正在重置Windsurf配置...' });
@@ -273,8 +273,8 @@ ipcMain.handle('test-imap', async (event, config) => {
 // 检测Windsurf配置路径
 ipcMain.handle('detect-windsurf-paths', async () => {
   try {
-    const WindsurfManager = require('./src/windsurfManager');
-    const manager = new WindsurfManager();
+    const WindsurfManagerFactory = require('./src/windsurfManagerFactory');
+    const manager = WindsurfManagerFactory.create();
     return await manager.detectConfigPaths();
   } catch (error) {
     return { success: false, error: error.message };
@@ -284,8 +284,8 @@ ipcMain.handle('detect-windsurf-paths', async () => {
 // 完整重置Windsurf
 ipcMain.handle('full-reset-windsurf', async () => {
   try {
-    const WindsurfManager = require('./src/windsurfManager');
-    const manager = new WindsurfManager();
+    const WindsurfManagerFactory = require('./src/windsurfManagerFactory');
+    const manager = WindsurfManagerFactory.create();
     return await manager.fullReset();
   } catch (error) {
     return { success: false, error: error.message };
@@ -295,8 +295,8 @@ ipcMain.handle('full-reset-windsurf', async () => {
 // 启动Windsurf
 ipcMain.handle('launch-windsurf', async () => {
   try {
-    const WindsurfManager = require('./src/windsurfManager');
-    const manager = new WindsurfManager();
+    const WindsurfManagerFactory = require('./src/windsurfManagerFactory');
+    const manager = WindsurfManagerFactory.create();
     const success = await manager.launchWindsurf();
     return { success };
   } catch (error) {
@@ -307,8 +307,8 @@ ipcMain.handle('launch-windsurf', async () => {
 // 自动登录Windsurf
 ipcMain.handle('auto-login-windsurf', async (event, credentials) => {
   try {
-    const WindsurfManager = require('./src/windsurfManager');
-    const manager = new WindsurfManager();
+    const WindsurfManagerFactory = require('./src/windsurfManagerFactory');
+    const manager = WindsurfManagerFactory.create();
     return await manager.autoLogin(credentials.email, credentials.password);
   } catch (error) {
     return { success: false, error: error.message };
@@ -344,22 +344,15 @@ ipcMain.handle('full-auto-switch', async (event, account) => {
     console.log(`账号: ${account.email}`);
     console.log('========================================');
     
-    const WindsurfManager = require('./src/windsurfManager');
+    const WindsurfManagerFactory = require('./src/windsurfManagerFactory');
     const BrowserAutomation = require('./src/browserAutomation');
     
     // 创建日志回调函数
     const logCallback = (message) => {
-      if (mainWindow && !mainWindow.isDestroyed()) {
-        mainWindow.webContents.send('switch-log', message);
-      }
+      mainWindow.webContents.send('switch-log', message);
     };
     
-    const manager = new WindsurfManager(logCallback);
-    browser = new BrowserAutomation();
-    
-    // 步骤0: 关闭之前可能存在的 Puppeteer 浏览器
-    logCallback('清理之前的浏览器实例...');
-    await browser.closeAllPuppeteerBrowsers(logCallback);
+    const manager = WindsurfManagerFactory.create(logCallback);
     
     // 步骤1: 完整重置Windsurf
     mainWindow.webContents.send('switch-progress', { 
