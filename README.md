@@ -9,6 +9,7 @@
 [![Platform](https://img.shields.io/badge/Platform-macOS-lightgrey.svg)](https://www.apple.com/macos/)
 [![Release](https://img.shields.io/github/v/release/crispvibe/Windsurf-Tool)](https://github.com/crispvibe/Windsurf-Tool/releases/latest)
 [![Downloads](https://img.shields.io/github/downloads/crispvibe/Windsurf-Tool/total)](https://github.com/crispvibe/Windsurf-Tool/releases)
+[![Windows](https://img.shields.io/badge/Windows-适配中-orange.svg)](https://github.com/crispvibe/Windsurf-Tool)
 
 [简体中文](README.md) | [English](README_EN.md)
 
@@ -20,6 +21,7 @@
 |------|------|----------|
 | macOS | Intel (x64) | [Windsurf-Tool-1.0.0.dmg](https://github.com/crispvibe/Windsurf-Tool/releases/download/v1.0.0/Windsurf-Tool-1.0.0.dmg) |
 | macOS | Apple Silicon (arm64) | [Windsurf-Tool-1.0.0-arm64.dmg](https://github.com/crispvibe/Windsurf-Tool/releases/download/v1.0.0/Windsurf-Tool-1.0.0-arm64.dmg) |
+| Windows | x64 | 🚧 适配中，预计 2 天内发布 |
 
 [功能特性](#功能特性) • [快速开始](#快速开始) • [使用指南](#使用指南) • [打包说明](#打包说明) • [工作原理](#工作原理) • [Windows适配](#windows适配)
 
