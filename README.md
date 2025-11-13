@@ -6,31 +6,22 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Electron](https://img.shields.io/badge/Electron-27.1.0-blue.svg)](https://www.electronjs.org/)
-[![Platform](https://img.shields.io/badge/Platform-macOS-lightgrey.svg)](https://www.apple.com/macos/)
+[![Platform](https://img.shields.io/badge/Platform-macOS%20%7C%20Windows-lightgrey.svg)](https://github.com/crispvibe/Windsurf-Tool)
 [![Release](https://img.shields.io/github/v/release/crispvibe/Windsurf-Tool)](https://github.com/crispvibe/Windsurf-Tool/releases/latest)
 [![Downloads](https://img.shields.io/github/downloads/crispvibe/Windsurf-Tool/total)](https://github.com/crispvibe/Windsurf-Tool/releases)
-[![Windows](https://img.shields.io/badge/Windows-适配中-orange.svg)](https://github.com/crispvibe/Windsurf-Tool)
+[![Windows](https://img.shields.io/badge/Windows-✅%20支持-green.svg)](https://github.com/crispvibe/Windsurf-Tool)
 
 [简体中文](README.md) | [English](README_EN.md)
 
 ### 📥 下载
 
-**最新版本**: [Windsurf-Tool 2.0.0](https://github.com/crispvibe/Windsurf-Tool/releases)
-
 | 平台 | 架构 | 下载链接 |
 |------|------|----------|
-| macOS | Intel (x64) | [Windsurf-Tool-2.0.0.zip](https://github.com/crispvibe/Windsurf-Tool/releases/) |
-| macOS | Apple Silicon (arm64) | [Windsurf-Tool-2.0.0-arm64.zip](https://github.com/crispvibe/Windsurf-Tool/releases/) |
+| macOS | Intel (x64) | [Windsurf-Tool.dmg](https://github.com/crispvibe/Windsurf-Tool/releases/latest) |
+| macOS | Apple Silicon (arm64) | [Windsurf-Tool-arm64.dmg](https://github.com/crispvibe/Windsurf-Tool/releases/latest) |
+| Windows | x64 | [Windsurf-Tool.exe](https://github.com/crispvibe/Windsurf-Tool/releases/latest) |
 
-Mac如果打开报错
-# 安装后执行这个命令
-sudo xattr -rd com.apple.quarantine /Applications/Windsurf-Tool.app
-# 如果应用在其他位置，替换路径
-sudo xattr -rd com.apple.quarantine /path/to/Windsurf-Tool.app
-
-| Windows | x64 | [Windsurf-Tool-2.0.0-Portable.exe](https://github.com/crispvibe/Windsurf-Tool/releases/)
-
-[功能特性](#功能特性) • [快速开始](#快速开始) • [使用指南](#使用指南) • [打包说明](#打包说明) • [工作原理](#工作原理) • [Windows适配](#windows适配)
+[功能特性](#功能特性) • [快速开始](#快速开始) • [使用指南](#使用指南) • [打包说明](#打包说明) • [工作原理](#工作原理)
 
 </div>
 
@@ -70,9 +61,38 @@ sudo xattr -rd com.apple.quarantine /path/to/Windsurf-Tool.app
 
 - **Node.js**: v16.0.0 或更高版本
 - **npm**: v7.0.0 或更高版本
-- **操作系统**: macOS (目前仅支持 macOS)
+- **操作系统**: macOS 10.15+ / Windows 10+
 
-### 安装步骤
+### 📦 直接下载安装
+
+#### macOS 安装说明
+
+1. 下载对应架构的 DMG 文件
+2. 双击打开 DMG 文件
+3. 将应用拖拽到 Applications 文件夹
+4. **首次运行**：右键点击应用 → 选择"打开" → 点击"打开"按钮
+5. 以后可以正常双击运行
+
+> ⚠️ **安全提示**：由于应用未签名，macOS 会阻止运行。可以通过以下方式绕过：
+> 
+> **方法1：右键打开（推荐）**
+> - 右键点击应用 → 选择"打开" → 点击"打开"按钮
+> 
+> **方法2：一键解决命令**
+> ```bash
+> # 🚀 一键解决方案（复制粘贴直接运行）
+> sudo xattr -rd com.apple.quarantine /Applications/Windsurf-Tool.app && echo "✅ 安全限制已解除，现在可以正常运行应用了！"
+> ```
+> 
+
+#### Windows 安装说明
+
+1. 下载 `Windsurf-Tool.exe`
+2. 双击运行安装程序
+3. 按照向导完成安装
+4. 从开始菜单或桌面快捷方式启动应用
+
+### 开发环境安装
 
 ```bash
 # 1. 克隆仓库
@@ -219,96 +239,47 @@ IMAP服务器: imap.163.com
 
 ### macOS 打包
 
-#### 使用打包脚本（推荐）
+**环境要求：**
+- macOS 10.15+ 系统
+- Node.js 16.0+ 
+- npm 7.0+
+- Xcode Command Line Tools：`xcode-select --install`
 
 ```bash
-# 运行交互式打包脚本
-chmod +x build.sh
-./build.sh
-
-# 选择打包选项：
-# 1) macOS (DMG + ZIP)
-# 2) Windows (NSIS)
-# 3) Linux (AppImage + DEB)
-# 4) 全平台
-```
-
-#### 使用 npm 命令
-
-```bash
-# 打包 macOS 版本（x64 + arm64）
+# 打包 macOS 版本（Intel + Apple Silicon）
 npm run build:mac
-
-# 仅打包 arm64 版本（Apple Silicon）
-npm run build:mac-arm64
 ```
 
-#### 打包产物
-
-```
-dist/
-├── Windsurf-Tool 1.0-1.0.0-arm64.dmg    # Apple Silicon 安装包
-├── Windsurf-Tool 1.0-1.0.0-x64.dmg      # Intel 安装包
-├── Windsurf-Tool 1.0-1.0.0-arm64-mac.zip
-└── Windsurf-Tool 1.0-1.0.0-x64-mac.zip
-```
-
-#### 安装方式
-
-1. 打开 `.dmg` 文件
-2. 将 `Windsurf-Tool 1.0` 拖拽到 `Applications` 文件夹
-
----
+**生成文件：**
+- `Windsurf-Tool.dmg` - Intel Mac
+- `Windsurf-Tool-arm64.dmg` - Apple Silicon Mac
 
 ### Windows 打包
 
-#### ⚠️ 重要提示
+**环境要求：**
+- Windows 10/11 系统
+- Node.js 16.0+
+- npm 7.0+
+- Visual Studio Build Tools 2019/2022
+- Python 3.7+ （用于原生模块编译）
 
-**必须在 Windows 系统上打包**，以确保 robotjs 等原生模块正确编译。
-
-#### 前置要求
-
-1. **Windows 10/11 系统**
-2. **Node.js 16+**
-3. **Visual Studio Build Tools**
-
+**安装构建工具：**
 ```powershell
-# 安装构建工具
-npm install --global windows-build-tools
+# 方法1：使用 Visual Studio Installer 安装 "C++ build tools"
+# 方法2：使用 chocolatey
+choco install visualstudio2022buildtools --package-parameters "--add Microsoft.VisualStudio.Workload.VCTools"
+
+# 安装 Python（如果没有）
+choco install python
 ```
 
-#### 打包步骤
-
 ```bash
-# 1. 安装依赖
-npm install
-
-# 2. 打包 Windows 版本
+# 打包 Windows 版本
 npm run build:win
 ```
 
-#### 打包产物
-
-```
-dist/
-├── Windsurf-Tool 1.0-1.0.0-x64.exe      # NSIS 安装程序
-└── Windsurf-Tool-1.0.0-portable.exe     # 便携版（免安装）
-```
-
-#### 安装方式
-
-**安装程序版：**
-1. 双击 `Windsurf-Tool 1.0-1.0.0-x64.exe`
-2. 按照向导完成安装
-3. 从桌面或开始菜单启动
-
-**便携版：**
-1. 直接运行 `Windsurf-Tool-1.0.0-portable.exe`
-2. 无需安装，配置保存在程序目录
-
-#### 详细说明
-
-查看完整的 Windows 打包指南：[WINDOWS_BUILD.md](WINDOWS_BUILD.md)
+**生成文件：**
+- `Windsurf-Tool.exe` - Windows 安装程序
 
 ---
 
@@ -415,184 +386,8 @@ end tell
 
 ---
 
-## Windows 适配
 
-### 当前状态
 
-⚠️ **本工具目前仅完全支持 macOS，Windows 版本需要进行以下适配工作。**
-
-### 需要适配的功能
-
-#### 1. 配置路径
-
-**macOS 路径：**
-```javascript
-const WINDSURF_CONFIG = path.join(process.env.HOME, 'Library/Application Support/Windsurf');
-const WINDSURF_CACHE = path.join(process.env.HOME, 'Library/Caches/Windsurf');
-```
-
-**Windows 路径：**
-```javascript
-const WINDSURF_CONFIG = path.join(process.env.APPDATA, 'Windsurf');
-const WINDSURF_CACHE = path.join(process.env.LOCALAPPDATA, 'Windsurf');
-```
-
-#### 2. 清理命令
-
-**macOS 命令：**
-```javascript
-await execPromise(`rm -rf "${WINDSURF_CONFIG}"`);
-```
-
-**Windows 命令：**
-```javascript
-await execPromise(`rmdir /s /q "${WINDSURF_CONFIG}"`);
-// 或使用 Node.js fs 模块
-await fs.rm(WINDSURF_CONFIG, { recursive: true, force: true });
-```
-
-#### 3. 启动应用
-
-**macOS 命令：**
-```javascript
-await execPromise('open -a Windsurf');
-```
-
-**Windows 命令：**
-```javascript
-await execPromise('start "" "C:\\Program Files\\Windsurf\\Windsurf.exe"');
-```
-
-#### 4. 自动化脚本
-
-**macOS 使用 AppleScript：**
-```applescript
-tell application "System Events"
-  keystroke "text"
-end tell
-```
-
-**Windows 需要使用：**
-- **PowerShell** - 发送按键
-- **AutoHotkey** - 自动化脚本
-- **robotjs** - Node.js 键盘模拟（已包含在依赖中）
-
-示例代码（使用 robotjs）：
-```javascript
-const robot = require('robotjs');
-robot.typeString('email@example.com');
-robot.keyTap('tab');
-robot.typeString('password');
-robot.keyTap('enter');
-```
-
-### 适配步骤
-
-1. **检测操作系统**
-```javascript
-const isWindows = process.platform === 'win32';
-const isMac = process.platform === 'darwin';
-```
-
-2. **修改 `main.js`**
-   - 添加平台检测
-   - 根据平台选择不同的配置路径
-
-3. **修改 `src/windsurfManager.js`**
-   - 适配 Windows 的清理命令
-   - 适配 Windows 的启动命令
-   - 使用 robotjs 替代 AppleScript
-
-4. **修改 `package.json`**
-   - 确保 robotjs 依赖正确安装
-   - 配置 Windows 打包选项
-
-5. **测试**
-   - 在 Windows 环境测试所有功能
-   - 验证路径、命令、自动化是否正常工作
-
-### 示例代码片段
-
-**平台检测和路径选择：**
-```javascript
-function getWindsurfPaths() {
-  if (process.platform === 'darwin') {
-    return {
-      config: path.join(process.env.HOME, 'Library/Application Support/Windsurf'),
-      cache: path.join(process.env.HOME, 'Library/Caches/Windsurf')
-    };
-  } else if (process.platform === 'win32') {
-    return {
-      config: path.join(process.env.APPDATA, 'Windsurf'),
-      cache: path.join(process.env.LOCALAPPDATA, 'Windsurf')
-    };
-  }
-}
-```
-
-**跨平台清理：**
-```javascript
-async function clearWindsurf() {
-  const paths = getWindsurfPaths();
-  
-  for (const dir of Object.values(paths)) {
-    try {
-      await fs.rm(dir, { recursive: true, force: true });
-    } catch (error) {
-      console.error(`清理失败: ${dir}`, error);
-    }
-  }
-}
-```
-
-**跨平台启动应用：**
-```javascript
-async function launchWindsurf() {
-  if (process.platform === 'darwin') {
-    await execPromise('open -a Windsurf');
-  } else if (process.platform === 'win32') {
-    // 需要根据实际安装路径调整
-    const windsurfPath = 'C:\\Program Files\\Windsurf\\Windsurf.exe';
-    await execPromise(`start "" "${windsurfPath}"`);
-  }
-}
-```
-
----
-
-## 注意事项
-
-⚠️ **重要提示：**
-
-1. **数据备份** - 切换账号会清除所有 Windsurf 配置，请提前备份重要数据
-2. **IMAP 密码** - 通常是授权码，不是邮箱登录密码
-3. **域名邮箱** - 确保配置的域名邮箱能够接收到 Windsurf 的验证邮件
-4. **批量注册** - 建议间隔 5-10 秒，避免被检测
-5. **系统权限** - macOS 需要授予辅助功能权限（系统偏好设置 > 安全性与隐私 > 辅助功能）
-
----
-
-## 常见问题
-
-**Q: Cloudflare 验证失败怎么办？**  
-A: puppeteer-real-browser 会自动处理，如果失败请检查网络连接。
-
-**Q: 收不到验证码？**  
-A: 检查 IMAP 配置是否正确，使用"测试连接"功能验证。
-
-**Q: 账号数据存储在哪里？**  
-A: 存储在应用数据目录的 `accounts.json` 文件中。
-
-**Q: 如何备份账号？**  
-A: 复制应用数据目录中的 `accounts.json` 文件。
-
-**Q: 自动登录失败怎么办？**  
-A: 
-1. 确保 Windsurf 已完全启动并显示登录界面
-2. 检查系统是否允许 AppleScript 控制（系统偏好设置 > 安全性与隐私 > 辅助功能）
-3. 如果自动登录失败，会显示账号密码供手动输入
-
----
 
 ## 开发者信息
 

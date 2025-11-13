@@ -1,4 +1,4 @@
-# Windsurf-Tool 1.0
+# Windsurf-Tool 2.0
 
 <div align="center">
 
@@ -6,24 +6,22 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Electron](https://img.shields.io/badge/Electron-27.1.0-blue.svg)](https://www.electronjs.org/)
-[![Platform](https://img.shields.io/badge/Platform-macOS-lightgrey.svg)](https://www.apple.com/macos/)
+[![Platform](https://img.shields.io/badge/Platform-macOS%20%7C%20Windows-lightgrey.svg)](https://github.com/crispvibe/Windsurf-Tool)
 [![Release](https://img.shields.io/github/v/release/crispvibe/Windsurf-Tool)](https://github.com/crispvibe/Windsurf-Tool/releases/latest)
 [![Downloads](https://img.shields.io/github/downloads/crispvibe/Windsurf-Tool/total)](https://github.com/crispvibe/Windsurf-Tool/releases)
-[![Windows](https://img.shields.io/badge/Windows-In%20Progress-orange.svg)](https://github.com/crispvibe/Windsurf-Tool)
+[![Windows](https://img.shields.io/badge/Windows-✅%20Supported-green.svg)](https://github.com/crispvibe/Windsurf-Tool)
 
 [English](README_EN.md) | [简体中文](README.md)
 
 ### 📥 Download
 
-**Latest Version**: [Windsurf-Tool for Mac 1.0](https://github.com/crispvibe/Windsurf-Tool/releases/latest)
-
 | Platform | Architecture | Download |
 |----------|--------------|----------|
-| macOS | Intel (x64) | [Windsurf-Tool-1.0.0.dmg](https://github.com/crispvibe/Windsurf-Tool/releases/download/v1.0.0/Windsurf-Tool-1.0.0.dmg) |
-| macOS | Apple Silicon (arm64) | [Windsurf-Tool-1.0.0-arm64.dmg](https://github.com/crispvibe/Windsurf-Tool/releases/download/v1.0.0/Windsurf-Tool-1.0.0-arm64.dmg) |
-| Windows | x64 | 🚧 In Progress, ETA 2 days |
+| macOS | Intel (x64) | [Windsurf-Tool.dmg](https://github.com/crispvibe/Windsurf-Tool/releases/latest) |
+| macOS | Apple Silicon (arm64) | [Windsurf-Tool-arm64.dmg](https://github.com/crispvibe/Windsurf-Tool/releases/latest) |
+| Windows | x64 | [Windsurf-Tool.exe](https://github.com/crispvibe/Windsurf-Tool/releases/latest) |
 
-[Features](#features) • [Quick Start](#quick-start) • [User Guide](#user-guide) • [Build Instructions](#build-instructions) • [How It Works](#how-it-works) • [Windows Adaptation](#windows-adaptation)
+[Features](#features) • [Quick Start](#quick-start) • [User Guide](#user-guide) • [Build Instructions](#build-instructions) • [How It Works](#how-it-works)
 
 </div>
 
@@ -63,9 +61,38 @@
 
 - **Node.js**: v16.0.0 or higher
 - **npm**: v7.0.0 or higher
-- **OS**: macOS (currently only supports macOS)
+- **OS**: macOS 10.15+ / Windows 10+
 
-### Installation
+### 📦 Direct Download Installation
+
+#### macOS Installation
+
+1. Download the corresponding architecture DMG file
+2. Double-click to open the DMG file
+3. Drag the app to Applications folder
+4. **First run**: Right-click the app → Select "Open" → Click "Open" button
+5. Can run normally by double-clicking afterwards
+
+> ⚠️ **Security Notice**: Since the app is unsigned, macOS will block it. You can bypass this with:
+> 
+> **Method 1: Right-click Open (Recommended)**
+> - Right-click the app → Select "Open" → Click "Open" button
+> 
+> **Method 2: One-click Solution Command**
+> ```bash
+> # 🚀 One-click solution (copy and paste to run)
+> sudo xattr -rd com.apple.quarantine /Applications/Windsurf-Tool.app && echo "✅ Security restrictions removed, app can now run normally!"
+> ```
+> 
+
+#### Windows Installation
+
+1. Download `Windsurf-Tool.exe`
+2. Double-click to run the installer
+3. Follow the wizard to complete installation
+4. Launch from Start menu or desktop shortcut
+
+### Development Environment Installation
 
 ```bash
 # 1. Clone repository
@@ -161,6 +188,40 @@ Email: your@outlook.com
 Password: Account password or app password
 ```
 
+**163 Mail Example:**
+```
+IMAP Server: imap.163.com
+Port: 993
+Email: your@163.com
+Password: Authorization code (generate in 163 Mail settings)
+```
+
+**126 Mail Example:**
+```
+IMAP Server: imap.126.com
+Port: 993
+Email: your@126.com
+Password: Authorization code (generate in 126 Mail settings)
+```
+
+**Yahoo Mail Example:**
+```
+IMAP Server: imap.mail.yahoo.com
+Port: 993
+Email: your@yahoo.com
+Password: App-specific password (generate in Yahoo account settings)
+```
+
+**iCloud Mail Example:**
+```
+IMAP Server: imap.mail.me.com
+Port: 993
+Email: your@icloud.com
+Password: App-specific password (generate in Apple ID settings)
+```
+
+💡 **Quick Config Tip:** The tool has built-in quick configuration for common email providers. Select your email provider in the "Settings" page to auto-fill IMAP configuration.
+
 Click "Test Connection" to verify configuration.
 
 **FAQ:**
@@ -212,102 +273,47 @@ Go to "Account Management" page to:
 
 ### macOS Build
 
-#### Method 1: Using Build Script (Recommended)
+**Requirements:**
+- macOS 10.15+ system
+- Node.js 16.0+
+- npm 7.0+
+- Xcode Command Line Tools: `xcode-select --install`
 
 ```bash
-# Run interactive build script
-chmod +x build.sh
-./build.sh
-
-# Select build option:
-# 1) macOS (DMG + ZIP)
-# 2) Windows (NSIS)
-# 3) Linux (AppImage + DEB)
-# 4) All platforms
-```
-
-#### Method 2: Using npm Commands
-
-```bash
-# Build macOS version (x64 + arm64)
+# Build macOS version (Intel + Apple Silicon)
 npm run build:mac
-
-# Build arm64 only (Apple Silicon)
-npm run build:mac-arm64
-
-# Build all platforms
-npm run build
 ```
 
-#### Build Output
-
-After building, files are in `dist/` directory:
-
-```
-dist/
-├── Windsurf-Tool 1.0-1.0.0-arm64.dmg    # Apple Silicon installer
-├── Windsurf-Tool 1.0-1.0.0-x64.dmg      # Intel installer
-├── Windsurf-Tool 1.0-1.0.0-arm64-mac.zip
-└── Windsurf-Tool 1.0-1.0.0-x64-mac.zip
-```
-
-#### Installation
-
-1. Open `.dmg` file
-2. Drag `Windsurf-Tool 1.0` to `Applications` folder
-3. First run: Right-click app and select "Open" (bypass Gatekeeper)
-
----
+**Generated files:**
+- `Windsurf-Tool.dmg` - Intel Mac
+- `Windsurf-Tool-arm64.dmg` - Apple Silicon Mac
 
 ### Windows Build
 
-#### ⚠️ Important Note
+**Requirements:**
+- Windows 10/11 system
+- Node.js 16.0+
+- npm 7.0+
+- Visual Studio Build Tools 2019/2022
+- Python 3.7+ (for native module compilation)
 
-**Must build on Windows system** to ensure native modules (like robotjs) compile correctly.
-
-#### Prerequisites
-
-1. **Windows 10/11 system**
-2. **Node.js 16+**
-3. **Visual Studio Build Tools**
-
+**Install build tools:**
 ```powershell
-# Install build tools
-npm install --global windows-build-tools
+# Method 1: Use Visual Studio Installer to install "C++ build tools"
+# Method 2: Use chocolatey
+choco install visualstudio2022buildtools --package-parameters "--add Microsoft.VisualStudio.Workload.VCTools"
+
+# Install Python (if not available)
+choco install python
 ```
 
-#### Build Steps
-
 ```bash
-# 1. Install dependencies
-npm install
-
-# 2. Build Windows version
+# Build Windows version
 npm run build:win
 ```
 
-#### Build Output
-
-```
-dist/
-├── Windsurf-Tool 1.0-1.0.0-x64.exe      # NSIS installer
-└── Windsurf-Tool-1.0.0-portable.exe     # Portable version (no install)
-```
-
-#### Installation
-
-**Installer version:**
-1. Double-click `Windsurf-Tool 1.0-1.0.0-x64.exe`
-2. Follow the installation wizard
-3. Launch from desktop or start menu
-
-**Portable version:**
-1. Run `Windsurf-Tool-1.0.0-portable.exe` directly
-2. No installation needed, config saved in program directory
-
-#### Detailed Guide
-
-See complete Windows build guide: [WINDOWS_BUILD.md](WINDOWS_BUILD.md)
+**Generated files:**
+- `Windsurf-Tool.exe` - Windows installer
 
 ---
 
@@ -411,185 +417,6 @@ end tell
   "password": "user_xxxxx@example.com"
 }
 ```
-
----
-
-## Windows Adaptation
-
-### Current Status
-
-⚠️ **This tool currently only fully supports macOS. Windows version requires the following adaptation work.**
-
-### Features Requiring Adaptation
-
-#### 1. Config Paths
-
-**macOS paths:**
-```javascript
-const WINDSURF_CONFIG = path.join(process.env.HOME, 'Library/Application Support/Windsurf');
-const WINDSURF_CACHE = path.join(process.env.HOME, 'Library/Caches/Windsurf');
-```
-
-**Windows paths:**
-```javascript
-const WINDSURF_CONFIG = path.join(process.env.APPDATA, 'Windsurf');
-const WINDSURF_CACHE = path.join(process.env.LOCALAPPDATA, 'Windsurf');
-```
-
-#### 2. Cleanup Commands
-
-**macOS command:**
-```javascript
-await execPromise(`rm -rf "${WINDSURF_CONFIG}"`);
-```
-
-**Windows command:**
-```javascript
-await execPromise(`rmdir /s /q "${WINDSURF_CONFIG}"`);
-// Or use Node.js fs module
-await fs.rm(WINDSURF_CONFIG, { recursive: true, force: true });
-```
-
-#### 3. Launch Application
-
-**macOS command:**
-```javascript
-await execPromise('open -a Windsurf');
-```
-
-**Windows command:**
-```javascript
-await execPromise('start "" "C:\\Program Files\\Windsurf\\Windsurf.exe"');
-```
-
-#### 4. Automation Scripts
-
-**macOS uses AppleScript:**
-```applescript
-tell application "System Events"
-  keystroke "text"
-end tell
-```
-
-**Windows needs to use:**
-- **PowerShell** - Send keystrokes
-- **AutoHotkey** - Automation scripts
-- **robotjs** - Node.js keyboard simulation (already in dependencies)
-
-Example code (using robotjs):
-```javascript
-const robot = require('robotjs');
-robot.typeString('email@example.com');
-robot.keyTap('tab');
-robot.typeString('password');
-robot.keyTap('enter');
-```
-
-### Adaptation Steps
-
-1. **Detect OS**
-```javascript
-const isWindows = process.platform === 'win32';
-const isMac = process.platform === 'darwin';
-```
-
-2. **Modify `main.js`**
-   - Add platform detection
-   - Choose different config paths based on platform
-
-3. **Modify `src/windsurfManager.js`**
-   - Adapt Windows cleanup commands
-   - Adapt Windows launch commands
-   - Use robotjs instead of AppleScript
-
-4. **Modify `package.json`**
-   - Ensure robotjs dependency is correctly installed
-   - Configure Windows build options
-
-5. **Testing**
-   - Test all features in Windows environment
-   - Verify paths, commands, automation work correctly
-
-### Example Code Snippets
-
-**Platform detection and path selection:**
-```javascript
-function getWindsurfPaths() {
-  if (process.platform === 'darwin') {
-    return {
-      config: path.join(process.env.HOME, 'Library/Application Support/Windsurf'),
-      cache: path.join(process.env.HOME, 'Library/Caches/Windsurf')
-    };
-  } else if (process.platform === 'win32') {
-    return {
-      config: path.join(process.env.APPDATA, 'Windsurf'),
-      cache: path.join(process.env.LOCALAPPDATA, 'Windsurf')
-    };
-  }
-}
-```
-
-**Cross-platform cleanup:**
-```javascript
-async function clearWindsurf() {
-  const paths = getWindsurfPaths();
-  
-  for (const dir of Object.values(paths)) {
-    try {
-      await fs.rm(dir, { recursive: true, force: true });
-    } catch (error) {
-      console.error(`Cleanup failed: ${dir}`, error);
-    }
-  }
-}
-```
-
-**Cross-platform app launch:**
-```javascript
-async function launchWindsurf() {
-  if (process.platform === 'darwin') {
-    await execPromise('open -a Windsurf');
-  } else if (process.platform === 'win32') {
-    // Adjust based on actual installation path
-    const windsurfPath = 'C:\\Program Files\\Windsurf\\Windsurf.exe';
-    await execPromise(`start "" "${windsurfPath}"`);
-  }
-}
-```
-
----
-
-## Important Notes
-
-⚠️ **Important:**
-
-1. **Data Backup** - Switching accounts will clear all Windsurf config, backup important data first
-2. **IMAP Password** - Usually authorization code, not email login password
-3. **Domain Email** - Ensure configured domain email can receive Windsurf verification emails
-4. **Batch Registration** - Recommend 5-10 seconds interval to avoid detection
-5. **System Permissions** - macOS requires accessibility permissions (System Preferences > Security & Privacy > Accessibility)
-
----
-
-## FAQ
-
-**Q: Cloudflare verification failed?**  
-A: puppeteer-real-browser handles it automatically, check network connection if failed.
-
-**Q: Not receiving verification codes?**  
-A: Check IMAP config is correct, use "Test Connection" to verify.
-
-**Q: Where is account data stored?**  
-A: Stored in `accounts.json` file in app data directory.
-
-**Q: How to backup accounts?**  
-A: Copy `accounts.json` file from app data directory.
-
-**Q: Auto login failed?**  
-A: 
-1. Ensure Windsurf is fully launched and showing login screen
-2. Check if system allows AppleScript control (System Preferences > Security & Privacy > Accessibility)
-3. If auto login fails, account credentials will be displayed for manual input
 
 ---
 
