@@ -2737,10 +2737,6 @@
                       获取 Token 失败？
                     </div>
                     <div style="font-size: 12px; color: #6e6e73; padding-left: 22px;">
-                      检查账号密码是否正确，如有验证码请手动完成
-                    </div>
-                  </div>
-
                   <div style="padding: 12px; background: #f5f5f7; border-radius: 8px;">
                     <div style="font-size: 13px; font-weight: 600; color: #1d1d1f; margin-bottom: 6px; display: flex; align-items: center; gap: 8px;">
                       <i data-lucide="clock" style="width: 14px; height: 14px; color: #34c759;"></i>
@@ -2748,6 +2744,43 @@
                     </div>
                     <div style="font-size: 12px; color: #6e6e73; padding-left: 22px;">
                       点击"刷新积分"按钮获取真实到期时间
+                    </div>
+                  </div>
+
+                  <div class="faq-item">
+                    <div class="faq-question">
+                      <i data-lucide="help-circle" style="width: 16px; height: 16px;"></i>
+                      刷新按钮的作用？
+                    </div>
+                    <div style="font-size: 12px; color: #6e6e73; padding-left: 22px; line-height: 1.8;">
+                      <strong>刷新积分按钮：</strong>更新账号的 Pro/Free 状态、积分余额、使用额度和到期时间<br>
+                      <strong>刷新所有数据按钮：</strong>刷新账号列表、域名配置、邮箱配置等所有数据
+                    </div>
+                  </div>
+                  
+                  <div class="faq-item">
+                    <div class="faq-question">
+                      <i data-lucide="help-circle" style="width: 16px; height: 16px;"></i>
+                      Token 会过期吗？
+                    </div>
+                    <div style="font-size: 12px; color: #6e6e73; padding-left: 22px; line-height: 1.8;">
+                      <strong>不用担心！</strong>切号功能会自动使用 refreshToken 获取最新的 access_token 和 API Key<br>
+                      每次切号都会自动更新 Token，实现<strong>永久有效</strong>，无需手动更新
+                    </div>
+                  </div>
+                  
+                  <div class="faq-item">
+                    <div class="faq-question">
+                      <i data-lucide="help-circle" style="width: 16px; height: 16px;"></i>
+                      切号功能的完整流程？
+                    </div>
+                    <div style="font-size: 12px; color: #6e6e73; padding-left: 22px; line-height: 1.8;">
+                      1. 检测并自动关闭 Windsurf<br>
+                      2. 使用 refreshToken 获取新的 access_token<br>
+                      3. 使用 access_token 获取新的 API Key<br>
+                      4. 写入所有配置（sessions、authStatus、codeium配置）<br>
+                      5. 自动启动 Windsurf<br>
+                      <strong>✨ 全程自动化，Token 永久有效</strong>
                     </div>
                   </div>
                 </div>
