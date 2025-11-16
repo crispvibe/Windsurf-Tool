@@ -142,8 +142,8 @@ function showSponsorPopup() {
       left: 0;
       right: 0;
       bottom: 0;
-      background: rgba(0, 0, 0, 0.6);
-      backdrop-filter: blur(8px);
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(12px);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -151,87 +151,182 @@ function showSponsorPopup() {
       animation: fadeIn 0.3s ease;
     ">
       <div style="
-        background: linear-gradient(135deg, #fff9e6 0%, #fff4d6 100%);
-        border-radius: 20px;
-        padding: 32px;
-        max-width: 500px;
+        background: linear-gradient(135deg, #ffffff 0%, #fafafa 100%);
+        border-radius: 24px;
+        padding: 0;
+        max-width: 520px;
         width: 90%;
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-        border: 2px solid #ffe4a3;
-        animation: slideUp 0.4s ease;
+        box-shadow: 0 24px 80px rgba(0, 0, 0, 0.4);
+        animation: slideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
         position: relative;
+        overflow: hidden;
       " onclick="event.stopPropagation()">
+        <!-- 顶部装饰条 -->
+        <div style="
+          height: 6px;
+          background: linear-gradient(90deg, #ff9500, #ff3b30, #ff9500);
+          background-size: 200% 100%;
+          animation: gradientMove 3s ease infinite;
+        "></div>
+        
         <!-- 关闭按钮 -->
         <button onclick="closeSponsorPopup()" style="
           position: absolute;
-          top: 16px;
-          right: 16px;
-          background: rgba(0, 0, 0, 0.1);
+          top: 20px;
+          right: 20px;
+          background: rgba(0, 0, 0, 0.06);
           border: none;
           border-radius: 50%;
-          width: 32px;
-          height: 32px;
+          width: 36px;
+          height: 36px;
           cursor: pointer;
           display: flex;
           align-items: center;
           justify-content: center;
-          transition: all 0.2s;
-        " onmouseover="this.style.background='rgba(0, 0, 0, 0.2)'" onmouseout="this.style.background='rgba(0, 0, 0, 0.1)'">
-          <i data-lucide="x" style="width: 18px; height: 18px; color: #1d1d1f;"></i>
+          transition: all 0.3s;
+          z-index: 10;
+        " onmouseover="this.style.background='rgba(0, 0, 0, 0.12)'; this.style.transform='rotate(90deg)'" onmouseout="this.style.background='rgba(0, 0, 0, 0.06)'; this.style.transform='rotate(0)'">
+          <i data-lucide="x" style="width: 20px; height: 20px; color: #1d1d1f;"></i>
         </button>
         
-        <!-- 标题 -->
-        <div style="text-align: center; margin-bottom: 24px;">
-          <div style="display: inline-flex; align-items: center; justify-content: center; width: 64px; height: 64px; background: linear-gradient(135deg, #ff9500, #ff3b30); border-radius: 50%; margin-bottom: 16px; box-shadow: 0 8px 16px rgba(255, 59, 48, 0.3);">
-            <i data-lucide="heart" style="width: 32px; height: 32px; color: white;"></i>
+        <!-- 内容区域 -->
+        <div style="padding: 48px 40px 40px;">
+          <!-- 图标和标题 -->
+          <div style="text-align: center; margin-bottom: 32px;">
+            <div style="
+              display: inline-flex;
+              align-items: center;
+              justify-content: center;
+              width: 80px;
+              height: 80px;
+              background: linear-gradient(135deg, #ff9500, #ff3b30);
+              border-radius: 50%;
+              margin-bottom: 20px;
+              box-shadow: 0 12px 32px rgba(255, 59, 48, 0.35);
+              position: relative;
+              animation: heartbeat 2s ease-in-out infinite;
+            ">
+              <i data-lucide="heart" style="width: 40px; height: 40px; color: white;"></i>
+              <!-- 光晕效果 -->
+              <div style="
+                position: absolute;
+                width: 100%;
+                height: 100%;
+                border-radius: 50%;
+                background: linear-gradient(135deg, #ff9500, #ff3b30);
+                opacity: 0.3;
+                animation: pulse 2s ease-in-out infinite;
+              "></div>
+            </div>
+            <h3 style="
+              margin: 0 0 12px 0;
+              font-size: 26px;
+              font-weight: 800;
+              background: linear-gradient(135deg, #ff9500, #ff3b30);
+              -webkit-background-clip: text;
+              -webkit-text-fill-color: transparent;
+              background-clip: text;
+              letter-spacing: -0.5px;
+            ">感谢您的支持</h3>
+            <p style="
+              margin: 0;
+              font-size: 13px;
+              color: #86868b;
+              font-weight: 500;
+            ">让我们一起让工具变得更好</p>
           </div>
-          <h3 style="margin: 0; font-size: 22px; font-weight: 700; color: #1d1d1f;">支持我们持续更新</h3>
-        </div>
-        
-        <!-- 内容 -->
-        <div style="text-align: center; margin-bottom: 28px;">
-          <p style="font-size: 14px; color: #6e6e73; line-height: 1.8; margin: 0;">
-            本工具<strong style="color: #1d1d1f;">完全免费开源</strong>，但服务器、CDN、API 中转等运营成本持续投入。<br>
-            如果对您有帮助，欢迎<strong style="color: #ff3b30;">赞助支持</strong>！
-          </p>
-        </div>
-        
-        <!-- 按钮 -->
-        <div style="display: flex; gap: 12px;">
-          <button onclick="closeSponsorPopup()" style="
-            flex: 1;
-            padding: 12px 24px;
-            background: rgba(0, 0, 0, 0.05);
-            border: 1px solid rgba(0, 0, 0, 0.1);
-            border-radius: 10px;
-            color: #1d1d1f;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-          " onmouseover="this.style.background='rgba(0, 0, 0, 0.1)'" onmouseout="this.style.background='rgba(0, 0, 0, 0.05)'">
-            稍后再说
-          </button>
-          <button onclick="openSponsorPage()" style="
-            flex: 1;
-            padding: 12px 24px;
-            background: linear-gradient(135deg, #ff9500, #ff3b30);
-            border: none;
-            border-radius: 10px;
-            color: white;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            box-shadow: 0 4px 12px rgba(255, 59, 48, 0.3);
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-          " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 16px rgba(255, 59, 48, 0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(255, 59, 48, 0.3)'">
-            <i data-lucide="heart" style="width: 16px; height: 16px;"></i>
-            去赞助
-          </button>
+          
+          <!-- 特性卡片 -->
+          <div style="
+            background: linear-gradient(135deg, #f0f8ff 0%, #e6f2ff 100%);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 28px;
+            border: 1px solid #d1e7ff;
+          ">
+            <div style="display: flex; align-items: flex-start; gap: 12px; margin-bottom: 16px;">
+              <div style="
+                width: 32px;
+                height: 32px;
+                background: linear-gradient(135deg, #007aff, #5ac8fa);
+                border-radius: 8px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                flex-shrink: 0;
+              ">
+                <i data-lucide="check" style="width: 18px; height: 18px; color: white;"></i>
+              </div>
+              <div>
+                <div style="font-size: 14px; font-weight: 600; color: #1d1d1f; margin-bottom: 4px;">
+                  完全免费开源
+                </div>
+                <div style="font-size: 12px; color: #6e6e73; line-height: 1.6;">
+                  所有功能永久免费，代码开源透明
+                </div>
+              </div>
+            </div>
+            <div style="display: flex; align-items: flex-start; gap: 12px;">
+              <div style="
+                width: 32px;
+                height: 32px;
+                background: linear-gradient(135deg, #ff9500, #ff3b30);
+                border-radius: 8px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                flex-shrink: 0;
+              ">
+                <i data-lucide="zap" style="width: 18px; height: 18px; color: white;"></i>
+              </div>
+              <div>
+                <div style="font-size: 14px; font-weight: 600; color: #1d1d1f; margin-bottom: 4px;">
+                  持续运营成本
+                </div>
+                <div style="font-size: 12px; color: #6e6e73; line-height: 1.6;">
+                  服务器、CDN、API 中转需要您的支持
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 按钮组 -->
+          <div style="display: flex; gap: 12px;">
+            <button onclick="closeSponsorPopup()" style="
+              flex: 1;
+              padding: 14px 24px;
+              background: #f5f5f7;
+              border: 1px solid #e5e5ea;
+              border-radius: 12px;
+              color: #1d1d1f;
+              font-size: 15px;
+              font-weight: 600;
+              cursor: pointer;
+              transition: all 0.2s;
+            " onmouseover="this.style.background='#e5e5ea'" onmouseout="this.style.background='#f5f5f7'">
+              稍后再说
+            </button>
+            <button onclick="openSponsorPage()" style="
+              flex: 1.2;
+              padding: 14px 24px;
+              background: linear-gradient(135deg, #ff9500, #ff3b30);
+              border: none;
+              border-radius: 12px;
+              color: white;
+              font-size: 15px;
+              font-weight: 700;
+              cursor: pointer;
+              box-shadow: 0 6px 20px rgba(255, 59, 48, 0.35);
+              transition: all 0.3s;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              gap: 8px;
+            " onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 10px 28px rgba(255, 59, 48, 0.45)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 6px 20px rgba(255, 59, 48, 0.35)'">
+              <i data-lucide="heart" style="width: 18px; height: 18px;"></i>
+              <span>赞助支持</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -244,12 +339,32 @@ function showSponsorPopup() {
       @keyframes slideUp {
         from { 
           opacity: 0;
-          transform: translateY(30px);
+          transform: translateY(40px) scale(0.95);
         }
         to { 
           opacity: 1;
-          transform: translateY(0);
+          transform: translateY(0) scale(1);
         }
+      }
+      @keyframes heartbeat {
+        0%, 100% { transform: scale(1); }
+        10% { transform: scale(1.1); }
+        20% { transform: scale(1); }
+      }
+      @keyframes pulse {
+        0%, 100% { 
+          transform: scale(1);
+          opacity: 0.3;
+        }
+        50% { 
+          transform: scale(1.3);
+          opacity: 0;
+        }
+      }
+      @keyframes gradientMove {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
       }
     </style>
   `;
