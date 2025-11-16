@@ -80,7 +80,7 @@ class WindsurfPathDetector {
   }
   
   /**
-   * 关闭 Windsurf（强制关闭）- 兼容所有 Windows 和 macOS 版本
+   * 关闭 Windsurf（优雅关闭 + 强制关闭）- 兼容所有 Windows 和 macOS 版本
    */
   static async closeWindsurf() {
     const { exec } = require('child_process');
@@ -91,71 +91,108 @@ class WindsurfPathDetector {
       console.log('[关闭 Windsurf] 开始关闭流程...');
       
       if (process.platform === 'win32') {
-        // Windows: 使用多种方法确保兼容性
-        const commands = [
-          'taskkill /F /T /IM Windsurf.exe 2>nul || exit 0',  // 主进程
-          'taskkill /F /T /IM "Windsurf Helper.exe" 2>nul || exit 0',  // Helper 进程
-          'wmic process where "name like \'%Windsurf%\'" delete 2>nul || exit 0'  // 备用方法（兼容旧版 Windows）
-        ];
+        // Windows: 先尝试优雅关闭，再强制关闭
+        console.log('[关闭 Windsurf] Windows: 尝试优雅关闭...');
+        try {
+          await execAsync('taskkill /IM Windsurf.exe 2>nul', { shell: 'cmd.exe' });
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        } catch (error) {
+          // 忽略错误
+        }
         
-        for (const cmd of commands) {
-          try {
-            await execAsync(cmd, { shell: 'cmd.exe' });
-          } catch (error) {
-            // 完全忽略错误
+        // 检查是否还在运行
+        if (await this.isRunning()) {
+          console.log('[关闭 Windsurf] Windows: 优雅关闭失败，使用强制关闭...');
+          const commands = [
+            'taskkill /F /T /IM Windsurf.exe 2>nul || exit 0',
+            'taskkill /F /T /IM "Windsurf Helper.exe" 2>nul || exit 0'
+          ];
+          
+          for (const cmd of commands) {
+            try {
+              await execAsync(cmd, { shell: 'cmd.exe' });
+            } catch (error) {
+              // 忽略错误
+            }
           }
         }
-        console.log('[关闭 Windsurf] Windows: 已执行关闭命令');
         
       } else if (process.platform === 'darwin') {
-        // macOS: 使用多种方法确保兼容性（支持 macOS 10.x - 14.x）
-        const commands = [
-          // 方法1: 使用 pkill（推荐，适用于所有 macOS 版本）
-          'pkill -9 -f "Windsurf.app/Contents/MacOS/Windsurf" 2>/dev/null || true',
-          'pkill -9 -f "Windsurf Helper" 2>/dev/null || true',
-          // 方法2: 使用 killall（备用）
-          'killall -9 "Windsurf" 2>/dev/null || true',
-          'killall -9 "Windsurf Helper (Renderer)" 2>/dev/null || true',
-          'killall -9 "Windsurf Helper (GPU)" 2>/dev/null || true',
-          'killall -9 "Windsurf Helper (Plugin)" 2>/dev/null || true',
-          'killall -9 "Windsurf Helper" 2>/dev/null || true',
-          // 方法3: 使用 osascript 强制退出（适用于所有 macOS 版本）
-          'osascript -e \'tell application "Windsurf" to quit\' 2>/dev/null || true'
-        ];
+        // macOS: 先尝试优雅关闭，再强制关闭
+        console.log('[关闭 Windsurf] macOS: 尝试优雅关闭...');
         
-        for (const cmd of commands) {
+        // 方法1: 使用 osascript 优雅退出
+        try {
+          await execAsync('osascript -e \'tell application "Windsurf" to quit\' 2>/dev/null');
+          console.log('[关闭 Windsurf] macOS: 已发送退出信号');
+          await new Promise(resolve => setTimeout(resolve, 3000));
+        } catch (error) {
+          console.log('[关闭 Windsurf] macOS: osascript 失败，尝试其他方法');
+        }
+        
+        // 检查是否还在运行
+        if (await this.isRunning()) {
+          console.log('[关闭 Windsurf] macOS: 优雅关闭失败，使用 SIGTERM...');
+          // 方法2: 使用 SIGTERM (15) 信号
           try {
-            await execAsync(cmd);
+            await execAsync('pkill -15 -f "Windsurf.app/Contents/MacOS/Windsurf" 2>/dev/null');
+            await new Promise(resolve => setTimeout(resolve, 2000));
           } catch (error) {
-            // 完全忽略错误
+            // 忽略错误
           }
         }
-        console.log('[关闭 Windsurf] macOS: 已执行关闭命令');
+        
+        // 最后检查，如果还在运行才使用 SIGKILL
+        if (await this.isRunning()) {
+          console.log('[关闭 Windsurf] macOS: SIGTERM 失败，使用 SIGKILL...');
+          const commands = [
+            'pkill -9 -f "Windsurf.app/Contents/MacOS/Windsurf" 2>/dev/null || true',
+            'pkill -9 -f "Windsurf Helper" 2>/dev/null || true',
+            'killall -9 "Windsurf" 2>/dev/null || true'
+          ];
+          
+          for (const cmd of commands) {
+            try {
+              await execAsync(cmd);
+            } catch (error) {
+              // 忽略错误
+            }
+          }
+        }
         
       } else {
-        // Linux: 使用多种方法确保兼容性
-        const commands = [
-          'pkill -9 -f "windsurf" 2>/dev/null || true',
-          'killall -9 windsurf 2>/dev/null || true',
-          'pkill -9 -i windsurf 2>/dev/null || true'
-        ];
+        // Linux: 先 SIGTERM 再 SIGKILL
+        console.log('[关闭 Windsurf] Linux: 尝试优雅关闭...');
+        try {
+          await execAsync('pkill -15 windsurf 2>/dev/null');
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        } catch (error) {
+          // 忽略错误
+        }
         
-        for (const cmd of commands) {
-          try {
-            await execAsync(cmd);
-          } catch (error) {
-            // 完全忽略错误
+        if (await this.isRunning()) {
+          console.log('[关闭 Windsurf] Linux: 使用强制关闭...');
+          const commands = [
+            'pkill -9 -f "windsurf" 2>/dev/null || true',
+            'killall -9 windsurf 2>/dev/null || true'
+          ];
+          
+          for (const cmd of commands) {
+            try {
+              await execAsync(cmd);
+            } catch (error) {
+              // 忽略错误
+            }
           }
         }
-        console.log('[关闭 Windsurf] Linux: 已执行关闭命令');
       }
       
       // 等待进程完全关闭
       console.log('[关闭 Windsurf] 等待进程关闭...');
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      await new Promise(resolve => setTimeout(resolve, 2000));
       
-      // 重试检测（最多5次）
-      const maxRetries = 5;
+      // 重试检测（最多3次）
+      const maxRetries = 3;
       for (let i = 0; i < maxRetries; i++) {
         const stillRunning = await this.isRunning();
         if (!stillRunning) {
@@ -169,10 +206,11 @@ class WindsurfPathDetector {
       // 最后检查一次
       const stillRunning = await this.isRunning();
       if (stillRunning) {
-        throw new Error('Windsurf 关闭失败，请手动关闭后重试');
+        console.warn('[关闭 Windsurf] ⚠️ 进程可能仍在运行，但继续执行');
+        // 不抛出错误，允许继续
       }
       
-      console.log('[关闭 Windsurf] ✅ 确认已关闭');
+      console.log('[关闭 Windsurf] ✅ 关闭流程完成');
       return true;
     } catch (error) {
       console.error('[关闭 Windsurf] 错误:', error);
