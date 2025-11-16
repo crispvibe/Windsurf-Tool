@@ -950,6 +950,29 @@ ipcMain.handle('load-windsurf-config', async (event) => {
 
 // ==================== Windsurf管理器 ====================
 
+// 检测 Windsurf 是否正在运行
+ipcMain.handle('check-windsurf-running', async () => {
+  try {
+    const { WindsurfPathDetector } = require('./js/accountSwitcher');
+    return await WindsurfPathDetector.isRunning();
+  } catch (error) {
+    console.error('检测 Windsurf 运行状态失败:', error);
+    return false;
+  }
+});
+
+// 关闭 Windsurf
+ipcMain.handle('close-windsurf', async () => {
+  try {
+    const { WindsurfPathDetector } = require('./js/accountSwitcher');
+    await WindsurfPathDetector.closeWindsurf();
+    return { success: true };
+  } catch (error) {
+    console.error('关闭 Windsurf 失败:', error);
+    return { success: false, error: error.message };
+  }
+});
+
 // 完整重置Windsurf
 ipcMain.handle('full-reset-windsurf', async (event, customInstallPath = null) => {
   try {

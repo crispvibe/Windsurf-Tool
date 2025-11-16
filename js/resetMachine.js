@@ -86,6 +86,41 @@ const ResetMachine = {
     const platformName = platform === 'win32' ? 'Windows' : (platform === 'darwin' ? 'macOS' : 'Linux');
     this.addLog(`检测到当前平台: ${platformName}`, 'info');
     
+    // 1. 检测 Windsurf 是否正在运行
+    this.addLog('', 'info');
+    this.addLog('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
+    this.addLog('检测 Windsurf 运行状态', 'info');
+    this.addLog('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
+    
+    try {
+      const isRunning = await window.ipcRenderer.invoke('check-windsurf-running');
+      
+      if (isRunning) {
+        this.addLog('⚠️ 检测到 Windsurf 正在运行', 'warning');
+        this.addLog('正在自动关闭 Windsurf...', 'info');
+        
+        try {
+          const closeResult = await window.ipcRenderer.invoke('close-windsurf');
+          
+          if (closeResult.success) {
+            this.addLog('✅ Windsurf 已成功关闭', 'success');
+          } else {
+            this.addLog('⚠️ Windsurf 可能未完全关闭，但继续执行', 'warning');
+          }
+        } catch (error) {
+          this.addLog(`⚠️ 关闭过程出现问题: ${error.message}`, 'warning');
+          this.addLog('⚠️ 继续执行重置，如果失败请手动关闭 Windsurf 后重试', 'warning');
+        }
+      } else {
+        this.addLog('✅ Windsurf 未运行', 'success');
+      }
+    } catch (error) {
+      this.addLog(`⚠️ 检测运行状态失败: ${error.message}`, 'warning');
+      this.addLog('继续执行重置操作...', 'info');
+    }
+    
+    this.addLog('', 'info');
+    
     // Windows 系统显示详细信息
     if (platform === 'win32') {
       this.addLog('', 'info');
