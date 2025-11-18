@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com; style-src 'self' 'unsafe-inline' *; frame-src *; img-src * data:; connect-src *; font-src *;">
   <script src="https://unpkg.com/lucide@latest"></script>
-  <title>Windsurf-Tool 4.3.0</title>
+  <title>Windsurf-Tool 4.4.0</title>
   <style>
     * {
       margin: 0;
@@ -397,7 +397,7 @@
     }
 
     .acc-col-email {
-      width: 200px;
+      width: 160px;
       flex-shrink: 0;
       color: #1d1d1f;
       font-weight: 500;
@@ -410,7 +410,7 @@
     }
 
     .acc-col-password {
-      width: 110px;
+      width: 90px;
       flex-shrink: 0;
       gap: 4px;
     }
@@ -458,7 +458,17 @@
       font-weight: 500;
       color: #1d1d1f;
       font-variant-numeric: tabular-nums;
-      font-size: 13px;
+      font-size: 11px;
+    }
+
+    .acc-col-used {
+      width: 65px;
+      flex-shrink: 0;
+      justify-content: flex-end;
+      font-weight: 500;
+      color: #6e6e73;
+      font-variant-numeric: tabular-nums;
+      font-size: 11px;
     }
 
     .acc-col-usage {
@@ -468,7 +478,7 @@
       font-weight: 500;
       color: #1d1d1f;
       font-variant-numeric: tabular-nums;
-      font-size: 13px;
+      font-size: 11px;
     }
 
     .acc-col-expiry {
@@ -488,10 +498,12 @@
 
     .acc-col-actions {
       flex: 1;
+      min-width: 0;
       display: flex;
-      gap: 4px;
+      gap: 2px;
       justify-content: flex-end;
       padding-right: 4px;
+      overflow: visible;
     }
 
     /* 操作按钮 - 紧凑设计 */
@@ -510,15 +522,17 @@
     }
 
     .acc-btn-icon {
-      padding: 3px;
+      padding: 4px;
+      background: none;
       border: none;
-      border-radius: 3px;
+      border-radius: 4px;
       cursor: pointer;
       transition: all 0.15s ease;
       display: flex;
       align-items: center;
       justify-content: center;
-      background: transparent;
+      color: #6e6e73;
+      flex-shrink: 0;
       position: relative;
     }
 
@@ -534,26 +548,28 @@
     .acc-btn-icon[data-tooltip]::after {
       content: attr(data-tooltip);
       position: absolute;
-      bottom: calc(100% + 4px);
+      bottom: calc(100% + 8px);
       left: 50%;
       transform: translateX(-50%);
-      padding: 5px 10px;
+      padding: 6px 12px;
       background: rgba(29, 29, 31, 0.95);
       color: white;
-      font-size: 11px;
+      font-size: 12px;
       font-weight: 500;
       white-space: nowrap;
       border-radius: 6px;
       opacity: 0;
+      visibility: hidden;
       pointer-events: none;
-      transition: opacity 0.2s ease, transform 0.2s ease;
-      z-index: 1000;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      transition: opacity 0.2s ease, visibility 0.2s ease, transform 0.2s ease;
+      z-index: 9999;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
     }
 
     .acc-btn-icon[data-tooltip]:hover::after {
       opacity: 1;
-      transform: translateX(-50%) translateY(-4px);
+      visibility: visible;
+      transform: translateX(-50%) translateY(-2px);
     }
 
     .acc-btn-primary {
@@ -2018,7 +2034,7 @@
         <div class="app-version">
           <div style="display: flex; align-items: center; gap: 8px;">
             <span id="sidebarPlatformInfo" style="color: #86868b;">-</span>
-            <span>v4.3.0</span>
+            <span>v4.4.0</span>
           </div>
           <span class="free-badge">免费使用</span>
         </div>
@@ -2112,7 +2128,21 @@
           </div>
           <div style="flex:1; min-width:0;">
             <div style="font-size:12px; color:#86868b; font-weight:500; margin-bottom:4px;">当前登录账号</div>
-            <div style="font-size:15px; color:#1d1d1f; font-weight:600; word-break:break-all;" id="currentAccountEmail">未登录</div>
+            <div style="font-size:15px; color:#1d1d1f; font-weight:600; word-break:break-all; margin-bottom:6px;" id="currentAccountEmail">未登录</div>
+            <div id="currentAccountDetails" style="display:none; font-size:12px; color:#86868b; display:flex; gap:16px; flex-wrap:wrap;">
+              <span id="currentAccountCredits">
+                <span>积分: --</span>
+              </span>
+              <span id="currentAccountUsedCredits">
+                <span>已用: --</span>
+              </span>
+              <span id="currentAccountUsage">
+                <span>使用率: --</span>
+              </span>
+              <span id="currentAccountExpires">
+                <span>到期: --</span>
+              </span>
+            </div>
           </div>
           <button onclick="refreshCurrentAccount()" style="background:rgba(0, 122, 255, 0.1); border:none; color:#007aff; padding:8px 16px; border-radius:8px; cursor:pointer; font-size:12px; font-weight:500; display:inline-flex; align-items:center; gap:6px; transition:all 0.2s ease; flex-shrink:0;" onmouseover="this.style.background='rgba(0, 122, 255, 0.2)'" onmouseout="this.style.background='rgba(0, 122, 255, 0.1)'" title="刷新登录状态">
             <i data-lucide="refresh-cw" style="width:14px; height:14px;"></i>
@@ -2195,10 +2225,27 @@
               </div>
             </div>
           </div>
-          <button class="btn btn-primary" onclick="exportAccounts()" data-i18n="exportAccounts">
-            <i data-lucide="download" style="width: 16px; height: 16px;"></i>
-            导出账号
-          </button>
+          <div class="dropdown-container">
+            <button class="btn btn-primary" onclick="toggleExportMenu(event)" id="exportAccountBtn">
+              <i data-lucide="download" style="width: 16px; height: 16px;"></i>
+              导出账号
+              <i data-lucide="chevron-down" style="width: 14px; height: 14px; margin-left: 4px;"></i>
+            </button>
+            <div class="dropdown-menu" id="exportAccountMenu">
+              <div class="dropdown-item" onclick="exportAccounts('all'); hideExportMenu();">
+                <i data-lucide="database" style="width: 16px; height: 16px;"></i>
+                <span>导出全部账号</span>
+              </div>
+              <div class="dropdown-item" onclick="exportAccounts('pro'); hideExportMenu();">
+                <i data-lucide="crown" style="width: 16px; height: 16px;"></i>
+                <span>导出Pro账号</span>
+              </div>
+              <div class="dropdown-item" onclick="exportAccounts('free'); hideExportMenu();">
+                <i data-lucide="user" style="width: 16px; height: 16px;"></i>
+                <span>导出Free账号</span>
+              </div>
+            </div>
+          </div>
           <button class="btn btn-success" onclick="batchGetAllTokens()" id="batchGetAllTokensBtn" title="为所有有密码的账号获取Token">
             <i data-lucide="key" style="width: 16px; height: 16px;"></i>
             获取Token
@@ -3863,12 +3910,37 @@
       menu.classList.remove('show');
     }
 
+    // 导出账号下拉菜单控制
+    function toggleExportMenu(event) {
+      event.stopPropagation();
+      const menu = document.getElementById('exportAccountMenu');
+      menu.classList.toggle('show');
+      
+      // 重新初始化图标
+      setTimeout(() => {
+        if (typeof lucide !== 'undefined') {
+          lucide.createIcons();
+        }
+      }, 0);
+    }
+
+    function hideExportMenu() {
+      const menu = document.getElementById('exportAccountMenu');
+      menu.classList.remove('show');
+    }
+
     // 点击页面其他地方关闭下拉菜单
     document.addEventListener('click', (event) => {
-      const menu = document.getElementById('addAccountMenu');
-      const btn = document.getElementById('addAccountBtn');
-      if (menu && !menu.contains(event.target) && !btn.contains(event.target)) {
+      const addMenu = document.getElementById('addAccountMenu');
+      const addBtn = document.getElementById('addAccountBtn');
+      if (addMenu && !addMenu.contains(event.target) && !addBtn.contains(event.target)) {
         hideAddAccountMenu();
+      }
+      
+      const exportMenu = document.getElementById('exportAccountMenu');
+      const exportBtn = document.getElementById('exportAccountBtn');
+      if (exportMenu && !exportMenu.contains(event.target) && !exportBtn.contains(event.target)) {
+        hideExportMenu();
       }
     });
     

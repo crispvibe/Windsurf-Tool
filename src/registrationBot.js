@@ -1061,19 +1061,14 @@ class RegistrationBot {
           }
         }
         
-        // 保存账号到本地
+        // 保存账号到本地（使用文件锁确保线程安全）
         const fs = require('fs').promises;
         const path = require('path');
         const { app } = require('electron');
-        const ACCOUNTS_FILE = path.join(app.getPath('userData'), 'accounts.json');
         
-        let accounts = [];
-        try {
-          const data = await fs.readFile(ACCOUNTS_FILE, 'utf-8');
-          accounts = JSON.parse(data);
-        } catch (error) {
-          // 文件不存在，使用空数组
-        }
+        // 使用全局的 accountsFileLock
+        const { accountsFileLock } = require('../main.js');
+        const ACCOUNTS_FILE = path.join(app.getPath('userData'), 'accounts.json');
         
         const account = {
           id: Date.now().toString(),
@@ -1086,12 +1081,32 @@ class RegistrationBot {
           apiServerUrl: tokenInfo ? tokenInfo.apiServerUrl : null,
           refreshToken: tokenInfo ? tokenInfo.refreshToken : null,
           idToken: tokenInfo ? tokenInfo.idToken : null,
-          idTokenExpiresAt: tokenInfo ? (Date.now() + 3600 * 1000) : null,  // ✅ 1小时后过期
+          idTokenExpiresAt: tokenInfo ? (Date.now() + 3600 * 1000) : null,
           createdAt: new Date().toISOString()
         };
         
-        accounts.push(account);
-        await fs.writeFile(ACCOUNTS_FILE, JSON.stringify(accounts, null, 2));
+        // 使用文件锁添加账号
+        await accountsFileLock.acquire(async () => {
+          let accounts = [];
+          try {
+            const data = await fs.readFile(ACCOUNTS_FILE, 'utf-8');
+            accounts = JSON.parse(data);
+          } catch (error) {
+            // 文件不存在，使用空数组
+          }
+          
+          // 检查是否已存在
+          const existingIndex = accounts.findIndex(a => a.email === email);
+          if (existingIndex >= 0) {
+            // 更新现有账号
+            accounts[existingIndex] = { ...accounts[existingIndex], ...account };
+          } else {
+            // 添加新账号
+            accounts.push(account);
+          }
+          
+          await fs.writeFile(ACCOUNTS_FILE, JSON.stringify(accounts, null, 2));
+        });
         
         console.log('账号已保存到本地');
         this.log('账号已保存到本地');
@@ -1376,7 +1391,7 @@ class RegistrationBot {
       formData.append('refresh_token', refreshToken);
       
       // 使用 Cloudflare Workers 中转（国内可访问）
-      const WORKER_URL = 'https://windsurf.crispvibe.cn';
+      const WORKER_URL = 'https://jolly-leaf-328a.92xh6jhdym.workers.dev';
       
       this.log('使用 Cloudflare Workers 中转请求...');
       

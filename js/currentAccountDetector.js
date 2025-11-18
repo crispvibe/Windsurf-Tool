@@ -163,33 +163,42 @@ async function updateAccountListWithCurrent() {
       // 使用data-email属性获取邮箱
       const email = item.getAttribute('data-email');
       const emailElement = item.querySelector('.acc-col-email');
+      const indexElement = item.querySelector('.acc-col-index');
       
       if (!email || !emailElement) return;
       
       // 检查是否是当前账号（邮箱匹配，不区分大小写）
       if (email.toLowerCase() === currentAccount.email.toLowerCase()) {
-        // 添加高亮样式
+        // 添加高亮样式（不使用左边框,避免偏移）
         item.classList.add('current-account');
         item.style.background = 'linear-gradient(90deg, #f0f9ff 0%, #ffffff 100%)';
-        item.style.borderLeft = '3px solid #007aff';
         
-        // 在邮箱列添加"当前"标记
-        if (!emailElement.querySelector('.current-badge')) {
-          const badge = document.createElement('span');
+        // 在序号列添加"当前"标记（覆盖在序号上方）
+        if (indexElement && !indexElement.querySelector('.current-badge')) {
+          indexElement.style.position = 'relative';
+          
+          const badge = document.createElement('div');
           badge.className = 'current-badge';
           badge.textContent = '当前';
           badge.style.cssText = `
-            display: inline-block;
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             padding: 2px 6px;
             background: #007aff;
             color: white;
             border-radius: 3px;
             font-size: 10px;
-            margin-left: 6px;
             font-weight: 600;
-            vertical-align: middle;
+            white-space: nowrap;
+            z-index: 10;
           `;
-          emailElement.appendChild(badge);
+          indexElement.appendChild(badge);
         }
         
         console.log('[账号列表] ✅ 已标记当前账号:', email);
@@ -197,12 +206,14 @@ async function updateAccountListWithCurrent() {
         // 移除高亮样式
         item.classList.remove('current-account');
         item.style.background = '';
-        item.style.borderLeft = '';
         
-        // 移除当前账号标记
-        const badge = emailElement.querySelector('.current-badge');
-        if (badge) {
-          badge.remove();
+        // 移除"当前"标记
+        if (indexElement) {
+          const badge = indexElement.querySelector('.current-badge');
+          if (badge) {
+            badge.remove();
+            indexElement.style.position = '';
+          }
         }
       }
     });

@@ -391,27 +391,57 @@ app.whenReady().then(async () => {
   createWindow();
 });
 
+// 批量获取Token的取消标志
+let batchTokenCancelled = false;
+
 // 批量获取所有账号Token
 ipcMain.handle('batch-get-all-tokens', async (event) => {
   try {
     console.log('[批量获取Token] 开始批量获取所有账号Token...');
+    
+    // 重置取消标志
+    batchTokenCancelled = false;
     
     // 读取所有账号
     const accountsFilePath = path.normalize(ACCOUNTS_FILE);
     const accountsData = await fs.readFile(accountsFilePath, 'utf-8');
     const accounts = JSON.parse(accountsData);
     
-    // 筛选出有密码但没有 apiKey 的账号
-    const accountsNeedToken = accounts.filter(acc => acc.email && acc.password && !acc.apiKey);
+    // 筛选出需要获取Token的账号（有邮箱密码，且Token不存在或已过期）
+    const now = Date.now();
+    const accountsNeedToken = [];
+    const accountsSkipped = [];
+    
+    accounts.forEach(acc => {
+      // 必须有邮箱和密码
+      if (!acc.email || !acc.password) {
+        return;
+      }
+      
+      // 检查Token是否过期
+      const tokenExpired = !acc.idToken || !acc.idTokenExpiresAt || now >= acc.idTokenExpiresAt;
+      
+      if (tokenExpired) {
+        // Token过期或不存在,需要获取
+        accountsNeedToken.push(acc);
+        const reason = !acc.idToken ? 'Token不存在' : !acc.idTokenExpiresAt ? '缺少过期时间' : 'Token已过期';
+        console.log(`[批量获取Token] ✓ ${acc.email} - ${reason}`);
+      } else {
+        // Token有效,跳过
+        accountsSkipped.push(acc);
+        const expiresIn = Math.round((acc.idTokenExpiresAt - now) / 1000 / 60);
+        console.log(`[批量获取Token] ⊘ ${acc.email} - Token有效 (${expiresIn}分钟后过期)`);
+      }
+    });
     
     if (accountsNeedToken.length === 0) {
       return {
         success: false,
-        error: '没有需要获取Token的账号（所有账号都已有Token或缺少密码）'
+        error: `没有需要获取Token的账号（${accountsSkipped.length}个账号Token都有效）`
       };
     }
     
-    console.log(`[批量获取Token] 找到 ${accountsNeedToken.length} 个需要获取Token的账号`);
+    console.log(`[批量获取Token] 需要获取: ${accountsNeedToken.length}个, 跳过: ${accountsSkipped.length}个`);
     
     const AccountLogin = require(path.join(__dirname, 'js', 'accountLogin'));
     const results = [];
@@ -420,6 +450,12 @@ ipcMain.handle('batch-get-all-tokens', async (event) => {
     
     // 顺序处理每个账号
     for (let i = 0; i < accountsNeedToken.length; i++) {
+      // 检查是否被取消
+      if (batchTokenCancelled) {
+        console.log('[批量获取Token] 用户取消操作');
+        break;
+      }
+      
       const account = accountsNeedToken[i];
       
       // 发送进度更新
@@ -544,10 +580,11 @@ ipcMain.handle('batch-get-all-tokens', async (event) => {
       });
     }
     
-    console.log(`[批量获取Token] 完成！成功: ${successCount}, 失败: ${failCount}`);
+    console.log(`[批量获取Token] 完成！成功: ${successCount}, 失败: ${failCount}, 取消: ${batchTokenCancelled}`);
     
     return {
       success: true,
+      cancelled: batchTokenCancelled,
       total: accountsNeedToken.length,
       successCount,
       failCount,
@@ -558,9 +595,17 @@ ipcMain.handle('batch-get-all-tokens', async (event) => {
     console.error('[批量获取Token] 失败:', error);
     return {
       success: false,
+      cancelled: batchTokenCancelled,
       error: error.message
     };
   }
+});
+
+// 取消批量获取Token
+ipcMain.handle('cancel-batch-get-tokens', async () => {
+  console.log('[批量获取Token] 收到取消请求');
+  batchTokenCancelled = true;
+  return { success: true };
 });
 
 // 监听退出应用请求
@@ -1540,7 +1585,8 @@ ipcMain.handle('get-account-token', async (event, credentials) => {
         password: password,
         username: result.account.name,
         apiKey: result.account.apiKey,
-        refreshToken: result.account.refreshToken
+        refreshToken: result.account.refreshToken,
+        account: result.account  // 添加完整的 account 对象
       };
     }
     
@@ -1555,3 +1601,8 @@ ipcMain.handle('get-account-token', async (event, credentials) => {
 });
 
 // Windsurf 账号切换功能已移除
+
+// 导出文件锁供其他模块使用
+module.exports = {
+  accountsFileLock
+};

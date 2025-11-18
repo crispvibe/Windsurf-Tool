@@ -1,6 +1,6 @@
 {
   "name": "windsurf-tool",
-  "version": "4.3.0",
+  "version": "4.4.0",
   "description": "Windsurf-Tool - 自动化管理 Windsurf 账号，支持批量注册、账号切换、到期提醒等功能",
   "main": "main.js",
   "scripts": {

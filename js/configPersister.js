@@ -142,7 +142,7 @@ class ConfigPersister {
   async getFirebaseTokens(refreshToken) {
     const axios = require('axios');
     const FIREBASE_API_KEY = 'AIzaSyDsOl-1XpT5err0Tcnx8FFod1H8gVGIycY';
-    const WORKER_URL = 'https://windsurf.crispvibe.cn';
+    const WORKER_URL = 'https://jolly-leaf-328a.92xh6jhdym.workers.dev';
     
     try {
       console.log('[Firebase] 正在获取 Firebase tokens...');

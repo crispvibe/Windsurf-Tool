@@ -21,7 +21,7 @@ const AccountQuery = {
    */
   async getAccessToken(refreshToken) {
     const FIREBASE_API_KEY = 'AIzaSyDsOl-1XpT5err0Tcnx8FFod1H8gVGIycY';
-    const WORKER_URL = 'https://windsurf.crispvibe.cn';
+    const WORKER_URL = 'https://jolly-leaf-328a.92xh6jhdym.workers.dev';
     
     try {
       // 使用 Cloudflare Workers 中转（国内可访问）
@@ -79,10 +79,15 @@ const AccountQuery = {
       // 提取到期时间（Pro账号有planEnd，Free账号没有）
       const expiresAt = planStatus.planEnd || planStatus.expiresAt || null;
       
+      // 计算总积分 = Prompt积分 + Flex附加积分
+      const promptCredits = Math.round((planStatus.availablePromptCredits || 0) / 100);
+      const flexCredits = Math.round((planStatus.availableFlexCredits || 0) / 100);
+      const totalCredits = promptCredits + flexCredits;
+      
       return {
         planName: planStatus.planInfo?.planName || 'Free',
         usedCredits: Math.round((planStatus.usedPromptCredits || 0) / 100),
-        totalCredits: Math.round((planStatus.availablePromptCredits || 0) / 100),
+        totalCredits: totalCredits,
         usagePercentage: 0,
         expiresAt: expiresAt,
         planStart: planStatus.planStart || null,
@@ -111,8 +116,35 @@ const AccountQuery = {
         };
       }
 
-      // 1. 获取 access_token
-      const { accessToken } = await this.getAccessToken(account.refreshToken);
+      let accessToken;
+      let newTokenData = null;
+      
+      // 优化: 如果本地有 idToken 且未过期,直接使用,避免每次都刷新
+      const now = Date.now();
+      const tokenExpired = !account.idToken || !account.idTokenExpiresAt || now >= account.idTokenExpiresAt;
+      
+      if (tokenExpired) {
+        // Token 不存在或已过期,需要刷新
+        try {
+          const tokenData = await this.getAccessToken(account.refreshToken);
+          accessToken = tokenData.accessToken;
+          // 保存新 Token 信息,用于后续更新到本地
+          newTokenData = {
+            idToken: tokenData.accessToken,
+            idTokenExpiresAt: now + (tokenData.expiresIn * 1000),
+            refreshToken: tokenData.refreshToken
+          };
+        } catch (error) {
+          // refreshToken 过期或失效
+          if (error.message.includes('TOKEN_EXPIRED') || error.message.includes('INVALID_REFRESH_TOKEN')) {
+            throw new Error('RefreshToken 已过期,请重新获取 Token');
+          }
+          throw error;
+        }
+      } else {
+        // Token 未过期,直接使用本地的
+        accessToken = account.idToken;
+      }
       
       // 2. 查询使用情况
       const usageInfo = await this.getUsageInfo(accessToken);
@@ -124,7 +156,9 @@ const AccountQuery = {
       
       return {
         success: true,
-        ...usageInfo
+        ...usageInfo,
+        // 如果刷新了 Token,返回新的 Token 信息
+        ...(newTokenData && { newTokenData })
       };
     } catch (error) {
       console.error(`查询账号 ${account.email} 失败:`, error);
@@ -241,9 +275,18 @@ if (typeof window !== 'undefined') {
                 id: account.id,
                 type: result.planName,
                 credits: result.totalCredits,
+                usedCredits: result.usedCredits,
+                totalCredits: result.totalCredits,
                 usage: result.usagePercentage,
                 queryUpdatedAt: new Date().toISOString()
               };
+              
+              // 如果刷新了 Token,保存新的 Token 信息
+              if (result.newTokenData) {
+                updateData.idToken = result.newTokenData.idToken;
+                updateData.idTokenExpiresAt = result.newTokenData.idTokenExpiresAt;
+                updateData.refreshToken = result.newTokenData.refreshToken;
+              }
               
               // 只有当expiresAt有值时才更新
               if (result.expiresAt) {

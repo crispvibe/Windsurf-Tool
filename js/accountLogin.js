@@ -30,11 +30,8 @@ class AccountLogin {
    */
   async loginWithEmailPassword(email, password) {
     try {
-      this.log('正在使用邮箱密码登录 Firebase...');
-      this.log('使用 Cloudflare Workers 中转，国内可直接访问');
-      
       const FIREBASE_API_KEY = 'AIzaSyDsOl-1XpT5err0Tcnx8FFod1H8gVGIycY';
-      const WORKER_URL = 'https://windsurf.crispvibe.cn/login';
+      const WORKER_URL = 'https://jolly-leaf-328a.92xh6jhdym.workers.dev/login';
       
       const response = await axios.post(
         WORKER_URL,
@@ -52,8 +49,6 @@ class AccountLogin {
         }
       );
       
-      this.log('✅ Firebase 登录成功');
-      
       return {
         idToken: response.data.idToken,
         refreshToken: response.data.refreshToken,
@@ -64,13 +59,9 @@ class AccountLogin {
     } catch (error) {
       // 判断是否为网络连接问题
       if (error.code === 'ENOTFOUND' || error.code === 'ETIMEDOUT' || error.code === 'ECONNREFUSED') {
-        const networkError = '❌ 无法连接到中转服务器\n' +
-                           '提示: windsurf.crispvibe.cn 连接失败\n' +
-                           '解决方案:\n' +
-                           '  1. 请检查网络连接是否正常\n' +
-                           '  2. 确认可以访问互联网\n' +
-                           '  3. 如果问题持续，请联系技术支持';
-        this.log(networkError);
+        this.log('❌ 无法连接到中转服务器');
+        this.log('   错误: 网络连接失败');
+        this.log('   建议: 请检查网络连接是否正常');
         throw new Error('无法连接到中转服务器，请检查网络连接');
       }
       
@@ -106,16 +97,9 @@ class AccountLogin {
    */
   async getAccountInfoByPassword(email, password) {
     try {
-      this.log('========== 开始使用邮箱密码获取账号信息 ==========');
-      this.log(`邮箱: ${email}`);
-      
-      // 步骤 1: 使用邮箱密码登录获取 Firebase Token
       const firebaseTokens = await this.loginWithEmailPassword(email, password);
-      
-      // 步骤 2: 使用 idToken 获取 API Key
       const apiKeyInfo = await this.getApiKey(firebaseTokens.idToken);
       
-      // 步骤 3: 整合完整信息
       const accountInfo = {
         email: email,
         password: password,
@@ -128,15 +112,10 @@ class AccountLogin {
         createdAt: new Date().toISOString()
       };
       
-      this.log('========== ✅ 成功获取账号信息 ==========');
-      this.log(`用户名: ${accountInfo.name}`);
-      this.log(`API Key: ${accountInfo.apiKey.substring(0, 20)}...`);
-      this.log(`Refresh Token: ${accountInfo.refreshToken.substring(0, 20)}...`);
-      
       return accountInfo;
     } catch (error) {
-      this.log(`========== ❌ 获取账号信息失败 ==========`);
-      this.log(`错误: ${error.message}`);
+      this.log(`❌ 获取账号信息失败`);
+      this.log(`   错误: ${error.message}`);
       throw error;
     }
   }
@@ -146,8 +125,6 @@ class AccountLogin {
    */
   async getApiKey(accessToken) {
     try {
-      this.log('正在获取 API Key...');
-      
       const response = await axios.post(
         'https://register.windsurf.com/exa.seat_management_pb.SeatManagementService/RegisterUser',
         {
@@ -161,8 +138,6 @@ class AccountLogin {
         }
       );
       
-      this.log('✅ 成功获取 API Key');
-      
       return {
         apiKey: response.data.api_key,
         name: response.data.name,
@@ -171,10 +146,9 @@ class AccountLogin {
     } catch (error) {
       // 判断是否为网络连接问题
       if (error.code === 'ENOTFOUND' || error.code === 'ETIMEDOUT' || error.code === 'ECONNREFUSED') {
-        const networkError = '❌ 无法连接到 Windsurf 服务器\n' +
-                           '提示: register.windsurf.com 可能在某些地区无法访问\n' +
-                           '解决方案: 请检查网络连接或尝试开启科学上网工具';
-        this.log(networkError);
+        this.log('❌ 无法连接到服务器');
+        this.log('   错误: 网络连接失败');
+        this.log('   建议: 请检查网络连接');
         throw new Error('无法连接到 Windsurf 服务器，请检查网络连接');
       }
       

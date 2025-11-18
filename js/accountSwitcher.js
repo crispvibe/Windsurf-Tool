@@ -583,11 +583,14 @@ class WindsurfPathDetector {
       console.log(`[关闭 Windsurf] macOS: 等待 SIGTERM 生效... (${i + 1}/3)`);
     }
     
-    // 步骤 3: 最后使用 SIGKILL (9) 强制关闭
+    // 步骤 3: 最后使用 SIGKILL (9) 强制关闭 - 增强版
     console.log('[关闭 Windsurf] macOS: SIGTERM 超时，使用 SIGKILL 强制关闭...');
     try {
-      await execAsync('pkill -9 -f "Windsurf.app/Contents/MacOS/Windsurf" 2>/dev/null');
-      await execAsync('pkill -9 -f "Windsurf Helper" 2>/dev/null');
+      // 强制杀死所有 Windsurf 相关进程
+      await execAsync('killall -9 Windsurf 2>/dev/null || true');
+      await execAsync('pkill -9 -f "Windsurf.app" 2>/dev/null || true');
+      await execAsync('pkill -9 -f "Windsurf Helper" 2>/dev/null || true');
+      await execAsync('pkill -9 -f windsurf 2>/dev/null || true');
       console.log('[关闭 Windsurf] macOS: 已发送 SIGKILL 信号');
     } catch (error) {
       console.log('[关闭 Windsurf] macOS: SIGKILL 发送失败');
@@ -641,7 +644,7 @@ class AccountSwitcher {
     formData.append('refresh_token', refreshToken);
     
     // 使用 Cloudflare Workers 中转（国内可访问）
-    const WORKER_URL = 'https://windsurf.crispvibe.cn';
+    const WORKER_URL = 'https://jolly-leaf-328a.92xh6jhdym.workers.dev';
     
     try {
       const response = await axios.post(
@@ -1032,21 +1035,17 @@ class AccountSwitcher {
     };
     
     try {
-      log('[切号] ========== 开始切换账号 ==========');
+      log('[切号] 🚀 准备切换账号...');
       log(`[切号] 目标账号: ${account.email}`);
       
       // Windows: 检查加密环境
       if (process.platform === 'win32') {
-        // 检查 Local State 文件（加密必需）
         const localStateCheck = this.checkLocalStateForWindows();
         if (!localStateCheck.success) {
           log('[切号] ❌ Local State 检查失败');
           log(`[切号]    错误: ${localStateCheck.message}`);
           log(`[切号]    建议: ${localStateCheck.suggestion}`);
           throw new Error(`Windows 加密环境异常: ${localStateCheck.message}\n${localStateCheck.suggestion}`);
-        } else {
-          log('[切号] ✅ Local State 文件检查通过');
-          log(`[切号]    加密密钥长度: ${localStateCheck.encryptedKeyLength} 字符`);
         }
       }
       
@@ -1112,14 +1111,11 @@ class AccountSwitcher {
         }
       }
       
-      // ========== 步骤 3: 获取账号凭证 ==========
-      log('[切号] ========== 步骤 3: 获取账号凭证 ==========');
-      
+      // 步骤 3: 获取账号凭证
       let apiKey, name, apiServerUrl, firebaseToken;
       
       // 优先使用账号文件中已有的数据
       if (account.apiKey && account.name && account.apiServerUrl) {
-        log('[切号] 使用账号文件中已有的凭证数据...');
         apiKey = account.apiKey;
         name = account.name;
         apiServerUrl = account.apiServerUrl;
@@ -1129,20 +1125,11 @@ class AccountSwitcher {
         const tokenExpired = account.idTokenExpiresAt && now >= account.idTokenExpiresAt;
         
         if (account.idToken && !tokenExpired) {
-          log('[切号] 使用已保存的 Firebase idToken');
           firebaseToken = account.idToken;
         } else if (account.refreshToken) {
-          // idToken 不存在或已过期，使用 refreshToken 获取新的
-          if (tokenExpired) {
-            log('[切号] idToken 已过期，正在刷新...');
-          } else {
-            log('[切号] 正在获取 Firebase token...');
-          }
-          
           try {
             const tokens = await this.getFirebaseTokens(account.refreshToken);
             firebaseToken = tokens.idToken;
-            log('[切号] ✅ 获取 Firebase token 成功');
             
             // 更新账号文件中的 idToken 和过期时间
             try {
@@ -1159,84 +1146,78 @@ class AccountSwitcher {
                 accounts[accountIndex].updatedAt = new Date().toISOString();
                 
                 await fs.writeFile(accountsFilePath, JSON.stringify(accounts, null, 2), { encoding: 'utf-8' });
-                log('[切号] ✅ 已更新 idToken 到账号文件');
               }
             } catch (updateError) {
               log(`[切号] ⚠️ 更新账号文件失败: ${updateError.message}`);
             }
           } catch (e) {
+            log(`[切号] ❌ 获取 Firebase token 失败`);
+            log(`[切号]    错误: ${e.message}`);
+            log(`[切号]    建议: 请检查 refreshToken 是否有效`);
             throw new Error(`获取 Firebase token 失败: ${e.message}\n请检查 refreshToken 是否有效`);
           }
         } else {
+          log(`[切号] ❌ 账号凭证不完整`);
+          log(`[切号]    错误: 缺少 idToken 和 refreshToken`);
+          log(`[切号]    建议: 请重新登录获取 Token`);
           throw new Error('账号缺少 idToken 和 refreshToken，无法切换\n请重新登录获取 Token');
         }
-        
-        log(`[切号] ✅ 使用已有数据`);
-        log(`[切号]    用户名: ${name}`);
-        log(`[切号]    API Key: ${apiKey.substring(0, 20)}...`);
-        log(`[切号]    Firebase Token: ${firebaseToken.substring(0, 20)}...`);
-        log(`[切号]    Server URL: ${apiServerUrl}`);
       } else {
         // 如果账号文件中没有，则通过 API 获取
         if (!account.refreshToken) {
+          log(`[切号] ❌ 账号凭证不完整`);
+          log(`[切号]    错误: 缺少 refreshToken 和 apiKey`);
+          log(`[切号]    建议: 请确保账号信息完整`);
           throw new Error('账号缺少 refreshToken 和 apiKey，无法切换');
         }
         
-        log('[切号] 账号文件中缺少凭证数据，通过 API 获取...');
-        log('[切号] 正在获取 Firebase tokens...');
-        const tokens = await this.getFirebaseTokens(account.refreshToken);
-        firebaseToken = tokens.idToken;
-        log('[切号] ✅ 获取 Firebase tokens 成功');
-        
-        log('[切号] 正在获取 api_key...');
-        const apiKeyInfo = await this.getApiKey(tokens.accessToken);
-        apiKey = apiKeyInfo.apiKey;
-        name = apiKeyInfo.name;
-        apiServerUrl = apiKeyInfo.apiServerUrl;
-        log('[切号] ✅ 获取 api_key 成功');
-        log(`[切号]    用户名: ${name}`);
-        log(`[切号]    API Key: ${apiKey.substring(0, 20)}...`);
-        log(`[切号]    Firebase Token: ${firebaseToken.substring(0, 20)}...`);
-        log(`[切号]    Server URL: ${apiServerUrl}`);
-        
-        // 保存到账号文件，以便下次直接使用
-        log('[切号] 保存凭证数据到账号文件...');
         try {
-          const { app } = require('electron');
-          const accountsFilePath = path.join(app.getPath('userData'), 'accounts.json');
-          let accounts = [];
-          try {
-            const data = await fs.readFile(accountsFilePath, 'utf-8');
-            accounts = JSON.parse(data);
-          } catch (e) {
-            log('[切号] ⚠️ 读取账号文件失败，跳过保存');
-          }
+          const tokens = await this.getFirebaseTokens(account.refreshToken);
+          firebaseToken = tokens.idToken;
           
-          const accountIndex = accounts.findIndex(acc => acc.id === account.id || acc.email === account.email);
-          if (accountIndex !== -1) {
-            const now = Date.now();
-            accounts[accountIndex] = {
-              ...accounts[accountIndex],
-              apiKey,
-              name,
-              apiServerUrl,
-              idToken: firebaseToken,
-              idTokenExpiresAt: now + (3600 * 1000),  // 1小时后过期
-              updatedAt: new Date().toISOString()
-            };
-            await fs.writeFile(accountsFilePath, JSON.stringify(accounts, null, 2), { encoding: 'utf-8' });
-            log('[切号] ✅ 凭证数据已保存到账号文件');
+          const apiKeyInfo = await this.getApiKey(tokens.accessToken);
+          apiKey = apiKeyInfo.apiKey;
+          name = apiKeyInfo.name;
+          apiServerUrl = apiKeyInfo.apiServerUrl;
+          
+          // 保存到账号文件，以便下次直接使用
+          try {
+            const { app } = require('electron');
+            const accountsFilePath = path.join(app.getPath('userData'), 'accounts.json');
+            let accounts = [];
+            try {
+              const data = await fs.readFile(accountsFilePath, 'utf-8');
+              accounts = JSON.parse(data);
+            } catch (e) {
+              log('[切号] ⚠️ 读取账号文件失败，跳过保存');
+            }
+            
+            const accountIndex = accounts.findIndex(acc => acc.id === account.id || acc.email === account.email);
+            if (accountIndex !== -1) {
+              const now = Date.now();
+              accounts[accountIndex] = {
+                ...accounts[accountIndex],
+                apiKey,
+                name,
+                apiServerUrl,
+                idToken: firebaseToken,
+                idTokenExpiresAt: now + (3600 * 1000),
+                updatedAt: new Date().toISOString()
+              };
+              await fs.writeFile(accountsFilePath, JSON.stringify(accounts, null, 2), { encoding: 'utf-8' });
+            }
+          } catch (e) {
+            log(`[切号] ⚠️ 保存凭证数据失败: ${e.message}`);
           }
         } catch (e) {
-          log(`[切号] ⚠️ 保存凭证数据失败: ${e.message}`);
+          log(`[切号] ❌ 获取账号凭证失败`);
+          log(`[切号]    错误: ${e.message}`);
+          log(`[切号]    建议: 请检查网络连接和账号状态`);
+          throw e;
         }
       }
       
-      // ========== 步骤 4: 写入数据库 ==========
-      log('[切号] ========== 步骤 4: 写入数据库 ==========');
-      
-      // 4.1 完全清除所有登录数据（包括浏览器登录）
-      log('[切号] 清理所有旧登录数据...');
+      // 步骤 4: 写入数据库
       const initSqlJs = require('sql.js');
       const dbPath = WindsurfPathDetector.getDBPath();
       let dbBuffer = await fs.readFile(dbPath);
@@ -1245,7 +1226,7 @@ class AccountSwitcher {
       
       let deletedCount = 0;
       
-      // 1. 删除所有 windsurf_auth 相关的 key（工具写入的）
+      // 删除所有旧登录数据
       const oldKeysResult = db.exec(`SELECT key FROM ItemTable WHERE key LIKE 'windsurf_auth-%'`);
       if (oldKeysResult.length > 0 && oldKeysResult[0].values.length > 0) {
         for (const row of oldKeysResult[0].values) {
@@ -1254,119 +1235,80 @@ class AccountSwitcher {
         }
       }
       
-      // 2. 删除所有 secret:// 开头的 sessions（包括浏览器登录的）
       const secretKeysResult = db.exec(`SELECT key FROM ItemTable WHERE key LIKE 'secret://%'`);
       if (secretKeysResult.length > 0 && secretKeysResult[0].values.length > 0) {
         for (const row of secretKeysResult[0].values) {
           db.run('DELETE FROM ItemTable WHERE key = ?', [row[0]]);
           deletedCount++;
-          log(`[切号] 删除: ${row[0]}`);
         }
       }
       
-      // 3. 删除 windsurfAuthStatus（旧的登录状态）
       db.run('DELETE FROM ItemTable WHERE key = ?', ['windsurfAuthStatus']);
       deletedCount++;
       
-      log(`[切号] ✅ 已删除 ${deletedCount} 个旧登录数据项`);
-      
-      // 保存更改
       const data = db.export();
       await fs.writeFile(dbPath, data);
       db.close();
       
-      // 4.2 构建 sessions 数据（使用 Firebase token）
-      log('[切号] 构建 sessions 数据...');
-      
+      // 构建并加密 sessions 数据
       const sessionsKey = 'secret://{"extensionId":"codeium.windsurf","key":"windsurf_auth.sessions"}';
       const sessionId = uuidv4();
       const sessionsData = [{
         id: sessionId,
-        accessToken: apiKey,  // ✅ 使用 API Key，不是 Firebase token
+        accessToken: apiKey,
         account: { label: name, id: name },
         scopes: []
       }];
       
-      log('[切号] Sessions 数据结构:');
-      log(`[切号]    id: ${sessionId}`);
-      log(`[切号]    accessToken (API Key): ${apiKey.substring(0, 20)}...`);
-      log(`[切号]    account.label: ${name}`);
-      log(`[切号]    account.id: ${name}`);
-      log(`[切号]    scopes: []`);
-      
-      // 加密 sessions 数据
-      log('[切号] 加密 sessions 数据...');
       const encrypted = await this.encryptSessions(sessionsData);
       
       // 验证加密结果
       if (!encrypted || !Buffer.isBuffer(encrypted)) {
+        log('[切号] ❌ Sessions 数据加密失败');
+        log('[切号]    错误: 返回的不是 Buffer');
         throw new Error('Sessions 数据加密失败：返回的不是 Buffer');
       }
       if (encrypted.length === 0) {
+        log('[切号] ❌ Sessions 数据加密失败');
+        log('[切号]    错误: Buffer 长度为 0');
         throw new Error('Sessions 数据加密失败：Buffer 长度为 0');
       }
       
-      log(`[切号] 加密后 Buffer 长度: ${encrypted.length} 字节`);
-      log(`[切号] 版本标识: ${encrypted.slice(0, 3).toString('utf-8')}`);
-      log(`[切号] 前 20 字节: [${Array.from(encrypted.slice(0, 20)).join(', ')}]`);
-      
-      // 验证加密数据可以被解密（确保格式正确）
+      // 验证加密数据可以被解密
       try {
         const testDecrypt = await this.decryptSessions(encrypted);
-        log('[切号] ✅ 加密数据验证成功（可正常解密）');
       } catch (e) {
+        log('[切号] ❌ 加密数据验证失败');
+        log(`[切号]    错误: ${e.message}`);
+        log('[切号]    建议: 这可能导致 Windsurf 无法识别登录状态');
         throw new Error(`加密数据验证失败：${e.message}\n这可能导致 Windsurf 无法识别登录状态`);
       }
       
-      // 4.3 写入所有必需数据
-      log('[切号] 写入账号数据...');
-      
-      // 写入 sessions
-      log(`[切号] 写入 sessions: ${sessionsKey}`);
+      // 写入所有必需数据
       await this.writeToDB(sessionsKey, encrypted);
-      log('[切号] ✅ Sessions 写入成功');
       
-      // 写入 windsurfAuthStatus
       const teamId = uuidv4();
       const authStatus = {
         name, apiKey, email: account.email,
         teamId, planName: "Pro"
       };
-      log('[切号] 写入 windsurfAuthStatus');
       await this.writeToDB('windsurfAuthStatus', authStatus);
-      log('[切号] ✅ windsurfAuthStatus 写入成功');
       
-      // 写入 codeium.windsurf
       const installationId = uuidv4();
       const codeiumConfig = {
         "codeium.installationId": installationId,
-        "codeium.apiKey": apiKey,  // ✅ 添加 API Key
+        "codeium.apiKey": apiKey,
         "apiServerUrl": apiServerUrl || "https://server.self-serve.windsurf.com",
         "codeium.hasOneTimeUpdatedUnspecifiedMode": true
       };
-      log('[切号] 写入 codeium.windsurf');
-      log(`[切号]    API Key: ${apiKey.substring(0, 20)}...`);
       await this.writeToDB('codeium.windsurf', codeiumConfig);
-      log('[切号] ✅ codeium.windsurf 写入成功');
-      
-      // 写入 codeium.windsurf-windsurf_auth
-      log('[切号] 写入 codeium.windsurf-windsurf_auth');
       await this.writeToDB('codeium.windsurf-windsurf_auth', name);
-      log('[切号] ✅ codeium.windsurf-windsurf_auth 写入成功');
       
-      log('[切号] ✅ 所有数据写入完成');
-      
-      // ========== 步骤 5: 启动 Windsurf ==========
-      log('[切号] ========== 步骤 5: 启动 Windsurf ==========');
-      
-      log('[切号] 正在启动 Windsurf...');
+      // 步骤 5: 启动 Windsurf
       await WindsurfPathDetector.startWindsurf();
-      log('[切号] ✅ Windsurf 已启动');
       
-      log('[切号] ========== 切换完成 ==========');
-      log(`[切号] 账号: ${account.email}`);
-      log(`[切号] 用户名: ${name}`);
-      log('[切号] 💡 请等待 Windsurf 完全加载后查看登录状态');
+      log('[切号] ✅ 切换成功');
+      log(`[切号] 账号: ${account.email} (${name})`);
       
       return {
         success: true,

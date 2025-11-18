@@ -66,6 +66,7 @@ const AccountManager = {
         <div class="acc-col acc-col-password">密码</div>
         <div class="acc-col acc-col-type">类型</div>
         <div class="acc-col acc-col-credits">积分</div>
+        <div class="acc-col acc-col-used">已用</div>
         <div class="acc-col acc-col-usage">使用率</div>
         <div class="acc-col acc-col-expiry">到期时间</div>
         <div class="acc-col acc-col-status">Token</div>
@@ -102,6 +103,7 @@ const AccountManager = {
       const safePassword = acc.password || '';
       const accountType = acc.type || '-';
       const accountCredits = acc.credits !== undefined ? acc.credits : '-';
+      const accountUsedCredits = acc.usedCredits !== undefined ? acc.usedCredits : '-';
       const accountUsage = acc.usage !== undefined ? acc.usage + '%' : '-';
       const maskedPassword = '••••••';
 
@@ -118,6 +120,7 @@ const AccountManager = {
           </div>
           <div class="acc-col acc-col-type">${accountType || '-'}</div>
           <div class="acc-col acc-col-credits">${accountCredits}</div>
+          <div class="acc-col acc-col-used">${accountUsedCredits}</div>
           <div class="acc-col acc-col-usage">${accountUsage}</div>
           <div class="acc-col acc-col-expiry">${expiryText}</div>
           <div class="acc-col acc-col-status" style="color:${tokenStatusColor};">${tokenStatusText}</div>
@@ -169,7 +172,8 @@ const AccountManager = {
     accountRows.forEach(row => {
       row.addEventListener('contextmenu', (e) => {
         e.preventDefault();
-        const email = row.querySelector('.acc-col-email')?.textContent;
+        // 使用 data-email 属性获取原始邮箱,避免复制后文本变化的问题
+        const email = row.getAttribute('data-email');
         const account = accounts.find(acc => acc.email === email);
         if (account) {
           this.showAccountContextMenu(e, account);
@@ -184,11 +188,11 @@ const AccountManager = {
     document.getElementById('warningCount').textContent = warningCount;
     document.getElementById('expiredCount').textContent = expiredCount;
     
-    // 加载完成后，标记当前登录的账号
+    // 加载完成后，标记当前登录的账号（延迟确保DOM完全渲染）
     if (typeof updateAccountListWithCurrent === 'function') {
       setTimeout(() => {
         updateAccountListWithCurrent();
-      }, 100);
+      }, 200);  // 增加延迟到200ms
     }
   },
 
@@ -399,9 +403,10 @@ const AccountManager = {
   },
 
   /**
-   * 导出所有账号 - 导出为 JSON 格式
+   * 导出账号 - 支持分类导出
+   * @param {string} type - 导出类型: 'all'(全部), 'pro'(Pro账号), 'free'(Free账号)
    */
-  async exportAccounts() {
+  async exportAccounts(type = 'all') {
     try {
       const result = await window.ipcRenderer.invoke('get-accounts');
       
@@ -410,7 +415,25 @@ const AccountManager = {
         return;
       }
       
-      const accounts = result.accounts;
+      let accounts = result.accounts;
+      let exportTypeName = '全部';
+      
+      // 根据类型筛选账号
+      if (type === 'pro') {
+        accounts = accounts.filter(acc => acc.type && acc.type.toLowerCase() === 'pro');
+        exportTypeName = 'Pro';
+        if (accounts.length === 0) {
+          alert('📭 没有Pro账号可导出');
+          return;
+        }
+      } else if (type === 'free') {
+        accounts = accounts.filter(acc => !acc.type || acc.type.toLowerCase() === 'free' || acc.type === '-');
+        exportTypeName = 'Free';
+        if (accounts.length === 0) {
+          alert('📭 没有Free账号可导出');
+          return;
+        }
+      }
       
       // 构建导出数据（JSON 格式）
       const exportData = {
@@ -437,9 +460,13 @@ const AccountManager = {
       // 转换为格式化的 JSON 字符串
       const jsonContent = JSON.stringify(exportData, null, 2);
       
+      // 根据类型生成文件名
+      const typePrefix = type === 'pro' ? 'pro' : type === 'free' ? 'free' : 'all';
+      const defaultFileName = `windsurf-accounts-${typePrefix}-${Date.now()}.json`;
+      
       const saveResult = await window.ipcRenderer.invoke('save-file-dialog', {
-        title: '导出所有账号',
-        defaultPath: `windsurf-accounts-${Date.now()}.json`,
+        title: `导出${exportTypeName}账号`,
+        defaultPath: defaultFileName,
         filters: [
           { name: 'JSON 文件', extensions: ['json'] },
           { name: '所有文件', extensions: ['*'] }
@@ -449,9 +476,9 @@ const AccountManager = {
       
       if (saveResult.success) {
         if (typeof showToast === 'function') {
-          showToast(`✅ 成功导出 ${accounts.length} 个账号`, 'success');
+          showToast(`✅ 成功导出 ${accounts.length} 个${exportTypeName}账号`, 'success');
         } else {
-          alert(`✅ 账号已成功导出到:\n${saveResult.filePath}\n\n共导出 ${accounts.length} 个账号`);
+          alert(`✅ 账号已成功导出到:\n${saveResult.filePath}\n\n共导出 ${accounts.length} 个${exportTypeName}账号`);
         }
       } else if (saveResult.cancelled) {
         // 用户取消了保存
@@ -771,19 +798,81 @@ const AccountManager = {
       }
       
       // 使用 accountQuery.js 中的 queryAccount 方法
-      const queryResult = await window.AccountQuery.queryAccount(account);
+      let queryResult = await window.AccountQuery.queryAccount(account);
+      
+      // 如果 RefreshToken 过期,尝试用邮箱密码重新获取 Token
+      if (!queryResult.success && queryResult.error && queryResult.error.includes('RefreshToken 已过期')) {
+        if (typeof showToast === 'function') {
+          showToast('检测到 Token 过期,正在重新获取...', 'info');
+        }
+        
+        // 检查是否有邮箱和密码
+        if (account.email && account.password) {
+          try {
+            // 调用主进程的获取 Token 方法
+            const loginResult = await window.ipcRenderer.invoke('get-account-token', {
+              email: account.email,
+              password: account.password
+            });
+            
+            if (loginResult.success && loginResult.account) {
+              // 更新账号的 Token 信息
+              const tokenUpdateResult = await window.ipcRenderer.invoke('update-account', {
+                id: account.id,
+                apiKey: loginResult.account.apiKey,
+                refreshToken: loginResult.account.refreshToken,
+                idToken: loginResult.account.idToken,
+                idTokenExpiresAt: loginResult.account.idTokenExpiresAt,
+                name: loginResult.account.name,
+                apiServerUrl: loginResult.account.apiServerUrl
+              });
+              
+              if (tokenUpdateResult.success) {
+                if (typeof showToast === 'function') {
+                  showToast('Token 重新获取成功,继续刷新...', 'success');
+                }
+                
+                // 重新加载账号信息
+                const accountsResult = await window.ipcRenderer.invoke('get-accounts');
+                const updatedAccount = accountsResult.accounts.find(acc => acc.id === account.id);
+                
+                // 再次查询积分
+                queryResult = await window.AccountQuery.queryAccount(updatedAccount);
+              }
+            } else {
+              throw new Error(loginResult.error || '获取 Token 失败');
+            }
+          } catch (error) {
+            console.error('自动重新获取 Token 失败:', error);
+            if (typeof showToast === 'function') {
+              showToast('自动获取 Token 失败: ' + error.message, 'error');
+            }
+          }
+        } else {
+          if (typeof showToast === 'function') {
+            showToast('账号缺少密码,无法自动重新获取 Token', 'error');
+          }
+        }
+      }
       
       if (queryResult.success) {
         // 准备更新的账号数据
         const updatedAccount = {
           id: account.id,
           type: queryResult.planName || account.type || '-',
-          credits: queryResult.totalCredits - queryResult.usedCredits || 0, // 剩余积分
+          credits: queryResult.totalCredits || 0, // 总积分
           usage: queryResult.usagePercentage || 0, // 使用率
           totalCredits: queryResult.totalCredits || 0,
           usedCredits: queryResult.usedCredits || 0,
           expiresAt: queryResult.expiresAt || null // 保存到期时间
         };
+        
+        // 如果查询结果包含新的 Token 信息,也一起更新
+        if (queryResult.newTokenData) {
+          updatedAccount.idToken = queryResult.newTokenData.idToken;
+          updatedAccount.idTokenExpiresAt = queryResult.newTokenData.idTokenExpiresAt;
+          updatedAccount.refreshToken = queryResult.newTokenData.refreshToken;
+        }
         
         // 调用 IPC 更新账号信息到 JSON 文件
         const updateResult = await window.ipcRenderer.invoke('update-account', updatedAccount);
@@ -793,9 +882,9 @@ const AccountManager = {
           await this.loadAccounts();
           
           if (typeof showToast === 'function') {
-            showToast(`✅ 刷新成功！类型: ${updatedAccount.type}, 剩余积分: ${updatedAccount.credits}`, 'success');
+            showToast(`✅ 刷新成功！类型: ${updatedAccount.type}, 总积分: ${updatedAccount.credits}`, 'success');
           } else {
-            alert(`刷新成功！\n类型: ${updatedAccount.type}\n剩余积分: ${updatedAccount.credits}\n使用率: ${updatedAccount.usage}%`);
+            alert(`刷新成功！\n类型: ${updatedAccount.type}\n总积分: ${updatedAccount.credits}\n使用率: ${updatedAccount.usage}%`);
           }
         } else {
           throw new Error(updateResult.error || '更新账号信息失败');
@@ -966,7 +1055,7 @@ const AccountManager = {
     const accountJson = JSON.stringify(account).replace(/'/g, '&#39;').replace(/"/g, '&quot;');
     
     const menuHTML = `
-      <div id="accountContextMenu" style="position: fixed; left: ${event.clientX}px; top: ${event.clientY}px; background: white; border: 1px solid #e5e5ea; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 10000; min-width: 180px;">
+      <div id="accountContextMenu" style="position: fixed; background: white; border: 1px solid #e5e5ea; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 10000; min-width: 180px; visibility: hidden;">
         <div class="context-menu-item" onclick="AccountManager.contextMenuViewDetails('${account.id}')">
           <i data-lucide="eye" style="width: 16px; height: 16px;"></i>
           <span>查看详情</span>
@@ -1016,6 +1105,35 @@ const AccountManager = {
     `;
     
     document.body.insertAdjacentHTML('beforeend', menuHTML);
+    
+    // 智能定位菜单
+    const menu = document.getElementById('accountContextMenu');
+    const menuRect = menu.getBoundingClientRect();
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    
+    let left = event.clientX;
+    let top = event.clientY;
+    
+    // 检查右侧是否超出屏幕
+    if (left + menuRect.width > viewportWidth) {
+      left = viewportWidth - menuRect.width - 10; // 留10px边距
+    }
+    
+    // 检查底部是否超出屏幕
+    if (top + menuRect.height > viewportHeight) {
+      top = viewportHeight - menuRect.height - 10; // 留10px边距
+    }
+    
+    // 确保不超出左侧和顶部
+    if (left < 10) left = 10;
+    if (top < 10) top = 10;
+    
+    // 应用位置并显示
+    menu.style.left = left + 'px';
+    menu.style.top = top + 'px';
+    menu.style.visibility = 'visible';
+    
     if (typeof lucide !== 'undefined') {
       lucide.createIcons();
     }
@@ -1307,8 +1425,8 @@ function deleteAllAccounts() {
   return AccountManager.deleteAllAccounts();
 }
 
-function exportAccounts() {
-  return AccountManager.exportAccounts();
+function exportAccounts(type = 'all') {
+  return AccountManager.exportAccounts(type);
 }
 
 // 注意：showImportAccountForm 在 renderer.js 中已有实现

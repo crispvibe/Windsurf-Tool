@@ -1029,8 +1029,16 @@ function showVersionUpdateModal(versionInfo) {
     if (closeBtn) {
       closeBtn.style.display = 'inline-block';
       closeBtn.textContent = '退出程序';
-      closeBtn.onclick = quitApplication;
-      closeBtn.className = 'btn btn-secondary';
+      // 移除所有旧的事件监听器
+      const newCloseBtn = closeBtn.cloneNode(true);
+      closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
+      // 添加新的事件监听器
+      newCloseBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        quitApplication();
+      });
+      newCloseBtn.className = 'btn btn-secondary';
     }
   } else {
     downloadBtn.innerHTML = '<i data-lucide="download" style="width: 16px; height: 16px; margin-right: 8px;"></i>立即下载最新版本';
@@ -1040,16 +1048,32 @@ function showVersionUpdateModal(versionInfo) {
       if (closeBtn) {
         closeBtn.style.display = 'inline-block';
         closeBtn.textContent = '退出程序';
-        closeBtn.onclick = quitApplication;
-        closeBtn.className = 'btn btn-secondary';
+        // 移除所有旧的事件监听器
+        const newCloseBtn = closeBtn.cloneNode(true);
+        closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
+        // 添加新的事件监听器
+        newCloseBtn.addEventListener('click', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          quitApplication();
+        });
+        newCloseBtn.className = 'btn btn-secondary';
       }
     } else {
       // 正常非强制更新：显示稍后更新按钮
       if (closeBtn) {
         closeBtn.style.display = 'inline-block';
         closeBtn.textContent = '稍后更新';
-        closeBtn.onclick = closeVersionUpdateModal;
-        closeBtn.className = 'btn btn-secondary';
+        // 移除所有旧的事件监听器
+        const newCloseBtn = closeBtn.cloneNode(true);
+        closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
+        // 添加新的事件监听器
+        newCloseBtn.addEventListener('click', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          closeVersionUpdateModal();
+        });
+        newCloseBtn.className = 'btn btn-secondary';
       }
     }
   }
@@ -3941,6 +3965,11 @@ async function getCurrentAccount() {
     const result = await window.ipcRenderer.invoke('get-current-login');
     const currentAccountInfo = document.getElementById('currentAccountInfo');
     const currentAccountEmail = document.getElementById('currentAccountEmail');
+    const currentAccountDetails = document.getElementById('currentAccountDetails');
+    const currentAccountCredits = document.getElementById('currentAccountCredits');
+    const currentAccountUsedCredits = document.getElementById('currentAccountUsedCredits');
+    const currentAccountUsage = document.getElementById('currentAccountUsage');
+    const currentAccountExpires = document.getElementById('currentAccountExpires');
     
     // 始终显示当前登录区域
     if (currentAccountInfo) {
@@ -3953,17 +3982,125 @@ async function getCurrentAccount() {
         currentAccountEmail.textContent = result.email;
         currentAccountEmail.style.color = '#1d1d1f';
       }
+      
+      // 从本地 accounts.json 读取账号详情
+      try {
+        const response = await window.ipcRenderer.invoke('load-accounts');
+        
+        // 检查响应格式
+        if (!response || !response.success) {
+          console.warn('读取账号列表失败:', response);
+          throw new Error('读取账号列表失败');
+        }
+        
+        const accounts = response.accounts || [];
+        const account = accounts.find(acc => acc.email === result.email);
+        
+        if (account) {
+          // 找到账号,显示详情
+          if (currentAccountDetails) {
+            currentAccountDetails.style.display = 'flex';
+          }
+          
+          // 显示总积分
+          if (currentAccountCredits) {
+            const credits = account.credits || account.credit || 0;
+            currentAccountCredits.querySelector('span').textContent = `积分: ${credits.toLocaleString()}`;
+          }
+          
+          // 显示已使用积分
+          if (currentAccountUsedCredits) {
+            const usedCredits = account.usedCredits || 0;
+            currentAccountUsedCredits.querySelector('span').textContent = `已用: ${usedCredits.toLocaleString()}`;
+          }
+          
+          // 显示使用率
+          if (currentAccountUsage) {
+            const usagePercent = account.usage || account.usagePercent || account.usage_percent || 0;
+            let usageColor = '#86868b';
+            
+            if (usagePercent >= 90) {
+              usageColor = '#ff3b30'; // 红色 - 使用率很高
+            } else if (usagePercent >= 70) {
+              usageColor = '#ff9500'; // 橙色 - 使用率较高
+            } else if (usagePercent >= 50) {
+              usageColor = '#ffcc00'; // 黄色 - 使用率中等
+            }
+            
+            currentAccountUsage.querySelector('span').textContent = `使用率: ${usagePercent}%`;
+            currentAccountUsage.querySelector('span').style.color = usageColor;
+          }
+          
+          // 显示到期时间
+          if (currentAccountExpires) {
+            if (account.expiresAt) {
+              const expiresDate = new Date(account.expiresAt);
+              const now = new Date();
+              const daysLeft = Math.ceil((expiresDate - now) / (1000 * 60 * 60 * 24));
+              
+              let expiresText = '';
+              let expiresColor = '#86868b';
+              
+              if (daysLeft < 0) {
+                expiresText = '已过期';
+                expiresColor = '#ff3b30';
+              } else if (daysLeft === 0) {
+                expiresText = '今天到期';
+                expiresColor = '#ff9500';
+              } else if (daysLeft <= 7) {
+                expiresText = `${daysLeft}天后到期`;
+                expiresColor = '#ff9500';
+              } else {
+                expiresText = expiresDate.toLocaleDateString('zh-CN');
+              }
+              
+              currentAccountExpires.querySelector('span').textContent = `到期: ${expiresText}`;
+              currentAccountExpires.querySelector('span').style.color = expiresColor;
+            } else {
+              currentAccountExpires.querySelector('span').textContent = '到期: 未知';
+            }
+          }
+        } else {
+          // 未找到账号
+          if (currentAccountDetails) {
+            currentAccountDetails.style.display = 'flex';
+          }
+          if (currentAccountCredits) {
+            currentAccountCredits.querySelector('span').textContent = '当前账号不在列表中';
+            currentAccountCredits.querySelector('span').style.color = '#ff9500';
+          }
+          if (currentAccountUsedCredits) {
+            currentAccountUsedCredits.style.display = 'none';
+          }
+          if (currentAccountUsage) {
+            currentAccountUsage.style.display = 'none';
+          }
+          if (currentAccountExpires) {
+            currentAccountExpires.style.display = 'none';
+          }
+        }
+      } catch (error) {
+        console.error('读取账号详情失败:', error);
+        // 读取失败,隐藏详情
+        if (currentAccountDetails) {
+          currentAccountDetails.style.display = 'none';
+        }
+      }
     } else {
       // 没有登录信息
       if (currentAccountEmail) {
         currentAccountEmail.textContent = '未登录';
         currentAccountEmail.style.color = '#86868b';
       }
+      if (currentAccountDetails) {
+        currentAccountDetails.style.display = 'none';
+      }
     }
   } catch (error) {
     console.error('获取当前登录账号失败:', error);
     const currentAccountInfo = document.getElementById('currentAccountInfo');
     const currentAccountEmail = document.getElementById('currentAccountEmail');
+    const currentAccountDetails = document.getElementById('currentAccountDetails');
     
     // 显示错误状态
     if (currentAccountInfo) {
@@ -3973,8 +4110,14 @@ async function getCurrentAccount() {
       currentAccountEmail.textContent = '获取失败';
       currentAccountEmail.style.color = '#ff3b30';
     }
+    if (currentAccountDetails) {
+      currentAccountDetails.style.display = 'none';
+    }
   }
 }
+
+// 定时刷新当前登录账号的定时器
+let currentAccountRefreshTimer = null;
 
 // 刷新当前登录账号
 async function refreshCurrentAccount() {
@@ -3982,6 +4125,31 @@ async function refreshCurrentAccount() {
   // 重新初始化图标
   if (typeof lucide !== 'undefined') {
     lucide.createIcons();
+  }
+}
+
+// 启动定时刷新当前登录账号 (每1分钟)
+function startCurrentAccountAutoRefresh() {
+  // 清除已存在的定时器
+  if (currentAccountRefreshTimer) {
+    clearInterval(currentAccountRefreshTimer);
+  }
+  
+  // 设置新的定时器 (60秒 = 1分钟)
+  currentAccountRefreshTimer = setInterval(async () => {
+    console.log('🔄 定时刷新当前登录账号...');
+    await refreshCurrentAccount();
+  }, 60000);
+  
+  console.log('⏰ 已启动当前登录账号定时刷新 (每1分钟)');
+}
+
+// 停止定时刷新
+function stopCurrentAccountAutoRefresh() {
+  if (currentAccountRefreshTimer) {
+    clearInterval(currentAccountRefreshTimer);
+    currentAccountRefreshTimer = null;
+    console.log('⏹️ 已停止当前登录账号定时刷新');
   }
 }
 
@@ -4010,6 +4178,9 @@ window.addEventListener('DOMContentLoaded', async () => {
   
   // 获取当前登录账号
   await getCurrentAccount();
+  
+  // 启动定时刷新当前登录账号 (每1分钟)
+  startCurrentAccountAutoRefresh();
   
   // 加载"已使用账号"持久化记录
   loadUsedAccountsFromStorage();
@@ -4288,7 +4459,15 @@ function showBatchTokenProgressModal() {
 /**
  * 关闭批量获取Token进度弹窗
  */
-function closeBatchTokenProgressModal() {
+async function closeBatchTokenProgressModal() {
+  // 发送取消请求到主进程
+  try {
+    await ipcRenderer.invoke('cancel-batch-get-tokens');
+    console.log('已发送取消批量获取Token请求');
+  } catch (error) {
+    console.error('取消批量获取Token失败:', error);
+  }
+  
   const modal = document.getElementById('batchTokenProgressModal');
   if (modal) {
     modal.classList.remove('active');
