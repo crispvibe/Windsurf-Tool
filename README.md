@@ -10,6 +10,9 @@
 
 之前不开源是因为想用的久一点，不想像cursor一样泛滥。好了最后记得点个Star小星星，后续不会再维护和更新该项目。
 
+如果你还是不信可以去抓包
+windsurf小助手
+https://github.com/yuxinle1996/windsurf-assistant-pub
 
 **本工具不收集任何用户数据**，所有账号信息仅存储在您的本地设备上。
 
