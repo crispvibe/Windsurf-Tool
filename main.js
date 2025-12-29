@@ -1399,441 +1399,441 @@ ipcMain.handle('get-payment-link', async (event, { email, password }) => {
   }
 });
 
-// 自动填写支付表单
-ipcMain.handle('auto-fill-payment', async (event, { paymentLink, card, billing }) => {
-  let browser = null;
+// // 自动填写支付表单
+// ipcMain.handle('auto-fill-payment', async (event, { paymentLink, card, billing }) => {
+//   let browser = null;
   
-  try {
-    console.log('[自动填写] 开始自动填写支付表单...');
-    
-    // 查找 Chrome 浏览器路径
-    const os = require('os');
-    const fsSync = require('fs');
-    
-    // 动态导入 rebrowser-puppeteer-core (项目使用的 puppeteer 版本)
-    let puppeteer;
-    try {
-      // 优先使用打包后的解压路径
-      const resourcesPath = process.resourcesPath || path.join(__dirname, '..');
-      const unpackedPath = path.join(resourcesPath, 'app.asar.unpacked', 'node_modules', 'rebrowser-puppeteer-core');
-      if (fsSync.existsSync(unpackedPath)) {
-        puppeteer = require(unpackedPath);
-      } else {
-        puppeteer = require('rebrowser-puppeteer-core');
-      }
-    } catch (e) {
-      // 如果没有 rebrowser-puppeteer-core，尝试使用 puppeteer-core
-      try {
-        puppeteer = require('puppeteer-core');
-      } catch (e2) {
-        return { success: false, error: '未安装 puppeteer，请检查依赖是否完整' };
-      }
-    }
-    const platform = os.platform();
-    
-    let chromePath = null;
-    if (platform === 'darwin') {
-      // macOS
-      const possiblePaths = [
-        '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-        '/Applications/Chromium.app/Contents/MacOS/Chromium',
-        `${os.homedir()}/Applications/Google Chrome.app/Contents/MacOS/Google Chrome`
-      ];
-      chromePath = possiblePaths.find(p => fsSync.existsSync(p));
-    } else if (platform === 'win32') {
-      // Windows
-      const possiblePaths = [
-        'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
-        'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
-        `${process.env.LOCALAPPDATA}\\Google\\Chrome\\Application\\chrome.exe`
-      ];
-      chromePath = possiblePaths.find(p => fsSync.existsSync(p));
-    } else {
-      // Linux
-      const possiblePaths = [
-        '/usr/bin/google-chrome',
-        '/usr/bin/chromium-browser',
-        '/usr/bin/chromium'
-      ];
-      chromePath = possiblePaths.find(p => fsSync.existsSync(p));
-    }
-    
-    if (!chromePath) {
-      return { success: false, error: '未找到 Chrome 浏览器，请确保已安装' };
-    }
-    
-    console.log('[自动填写] Chrome 路径:', chromePath);
-    
-    // 启动浏览器
-    browser = await puppeteer.launch({
-      executablePath: chromePath,
-      headless: false,
-      defaultViewport: null,
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-blink-features=AutomationControlled',
-        '--disable-infobars',
-        '--start-maximized'
-      ]
-    });
-    
-    const page = await browser.newPage();
-    
-    // 延迟函数（替代已废弃的 waitForTimeout）
-    const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-    
-    // 设置 User-Agent
-    await page.setUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
-    
-    // 发送日志到渲染进程的函数
-    const sendLog = (msg) => {
-      console.log(msg);
-      if (mainWindow && !mainWindow.isDestroyed()) {
-        mainWindow.webContents.send('auto-fill-log', msg);
-      }
-    };
-    
-    // 打开支付链接
-    sendLog('[自动填写] 打开支付页面...');
-    await page.goto(paymentLink, { waitUntil: 'domcontentloaded', timeout: 60000 });
-    
-    // 等待页面完全加载
-    sendLog('[自动填写] 等待页面完全加载...');
-    await delay(5000);
-    
-    // 等待关键元素出现
-    sendLog('[自动填写] 等待支付表单加载...');
-    try {
-      // 等待银行卡按钮出现
-      await page.waitForSelector('button[data-testid="card-accordion-item-button"]', { timeout: 30000, visible: true });
-      sendLog('[自动填写] 支付表单已加载');
-    } catch (e) {
-      sendLog('[自动填写] 等待超时，继续尝试...');
-    }
-    
-    await delay(3000);
-    
-    // 点击银行卡支付选项
-    sendLog('[自动填写] 点击银行卡选项...');
-    try {
-      // 尝试多种选择器点击银行卡选项
-      const clicked = await page.evaluate(() => {
-        // 多种可能的选择器
-        const selectors = [
-          // Accordion 按钮
-          'button[data-testid="card-accordion-item-button"]',
-          'button[aria-label*="银行卡"]',
-          'button[aria-label*="Card"]',
-          // 包含"银行卡"文字的可点击元素
-          '[class*="Accordion"] button',
-          // 单选按钮样式
-          'input[type="radio"][value*="card"]',
-          'label:has(input[type="radio"])',
-          // 通过文本内容查找
-        ];
+//   try {
+//     console.log('[自动填写] 开始自动填写支付表单...');
+
+//     // 查找 Chrome 浏览器路径
+//     const os = require('os');
+//     const fsSync = require('fs');
+
+//     // 动态导入 rebrowser-puppeteer-core (项目使用的 puppeteer 版本)
+//     let puppeteer;
+//     try {
+//       // 优先使用打包后的解压路径
+//       const resourcesPath = process.resourcesPath || path.join(__dirname, '..');
+//       const unpackedPath = path.join(resourcesPath, 'app.asar.unpacked', 'node_modules', 'rebrowser-puppeteer-core');
+//       if (fsSync.existsSync(unpackedPath)) {
+//         puppeteer = require(unpackedPath);
+//       } else {
+//         puppeteer = require('rebrowser-puppeteer-core');
+//       }
+//     } catch (e) {
+//       // 如果没有 rebrowser-puppeteer-core，尝试使用 puppeteer-core
+//       try {
+//         puppeteer = require('puppeteer-core');
+//       } catch (e2) {
+//         return { success: false, error: '未安装 puppeteer，请检查依赖是否完整' };
+//       }
+//     }
+//     const platform = os.platform();
+
+//     let chromePath = null;
+//     if (platform === 'darwin') {
+//       // macOS
+//       const possiblePaths = [
+//         '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+//         '/Applications/Chromium.app/Contents/MacOS/Chromium',
+//         `${os.homedir()}/Applications/Google Chrome.app/Contents/MacOS/Google Chrome`
+//       ];
+//       chromePath = possiblePaths.find(p => fsSync.existsSync(p));
+//     } else if (platform === 'win32') {
+//       // Windows
+//       const possiblePaths = [
+//         'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+//         'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+//         `${process.env.LOCALAPPDATA}\\Google\\Chrome\\Application\\chrome.exe`
+//       ];
+//       chromePath = possiblePaths.find(p => fsSync.existsSync(p));
+//     } else {
+//       // Linux
+//       const possiblePaths = [
+//         '/usr/bin/google-chrome',
+//         '/usr/bin/chromium-browser',
+//         '/usr/bin/chromium'
+//       ];
+//       chromePath = possiblePaths.find(p => fsSync.existsSync(p));
+//     }
+
+//     if (!chromePath) {
+//       return { success: false, error: '未找到 Chrome 浏览器，请确保已安装' };
+//     }
+
+//     console.log('[自动填写] Chrome 路径:', chromePath);
+
+//     // 启动浏览器
+//     browser = await puppeteer.launch({
+//       executablePath: chromePath,
+//       headless: false,
+//       defaultViewport: null,
+//       args: [
+//         '--no-sandbox',
+//         '--disable-setuid-sandbox',
+//         '--disable-blink-features=AutomationControlled',
+//         '--disable-infobars',
+//         '--start-maximized'
+//       ]
+//     });
+
+//     const page = await browser.newPage();
+
+//     // 延迟函数（替代已废弃的 waitForTimeout）
+//     const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+//     // 设置 User-Agent
+//     await page.setUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+
+//     // 发送日志到渲染进程的函数
+//     const sendLog = (msg) => {
+//       console.log(msg);
+//       if (mainWindow && !mainWindow.isDestroyed()) {
+//         mainWindow.webContents.send('auto-fill-log', msg);
+//       }
+//     };
+
+//     // 打开支付链接
+//     sendLog('[自动填写] 打开支付页面...');
+//     await page.goto(paymentLink, { waitUntil: 'domcontentloaded', timeout: 60000 });
+
+//     // 等待页面完全加载
+//     sendLog('[自动填写] 等待页面完全加载...');
+//     await delay(5000);
+
+//     // 等待关键元素出现
+//     sendLog('[自动填写] 等待支付表单加载...');
+//     try {
+//       // 等待银行卡按钮出现
+//       await page.waitForSelector('button[data-testid="card-accordion-item-button"]', { timeout: 30000, visible: true });
+//       sendLog('[自动填写] 支付表单已加载');
+//     } catch (e) {
+//       sendLog('[自动填写] 等待超时，继续尝试...');
+//     }
+
+//     await delay(3000);
+
+//     // 点击银行卡支付选项
+//     sendLog('[自动填写] 点击银行卡选项...');
+//     try {
+//       // 尝试多种选择器点击银行卡选项
+//       const clicked = await page.evaluate(() => {
+//         // 多种可能的选择器
+//         const selectors = [
+//           // Accordion 按钮
+//           'button[data-testid="card-accordion-item-button"]',
+//           'button[aria-label*="银行卡"]',
+//           'button[aria-label*="Card"]',
+//           // 包含"银行卡"文字的可点击元素
+//           '[class*="Accordion"] button',
+//           // 单选按钮样式
+//           'input[type="radio"][value*="card"]',
+//           'label:has(input[type="radio"])',
+//           // 通过文本内容查找
+//         ];
         
-        for (const sel of selectors) {
-          try {
-            const el = document.querySelector(sel);
-            if (el) {
-              el.click();
-              return sel;
-            }
-          } catch (e) {}
-        }
+//         for (const sel of selectors) {
+//           try {
+//             const el = document.querySelector(sel);
+//             if (el) {
+//               el.click();
+//               return sel;
+//             }
+//           } catch (e) {}
+//         }
         
-        // 尝试通过文本内容查找"银行卡"
-        const allElements = document.querySelectorAll('button, div[role="button"], label, [class*="Accordion"]');
-        for (const el of allElements) {
-          if (el.textContent && el.textContent.includes('银行卡')) {
-            el.click();
-            return 'text:银行卡';
-          }
-        }
+//         // 尝试通过文本内容查找"银行卡"
+//         const allElements = document.querySelectorAll('button, div[role="button"], label, [class*="Accordion"]');
+//         for (const el of allElements) {
+//           if (el.textContent && el.textContent.includes('银行卡')) {
+//             el.click();
+//             return 'text:银行卡';
+//           }
+//         }
         
-        return null;
-      });
+//         return null;
+//       });
       
-      if (clicked) {
-        sendLog(`[自动填写] 已点击: ${clicked}`);
-      } else {
-        sendLog('[自动填写] 未找到银行卡选项，尝试直接填写');
-      }
+//       if (clicked) {
+//         sendLog(`[自动填写] 已点击: ${clicked}`);
+//       } else {
+//         sendLog('[自动填写] 未找到银行卡选项，尝试直接填写');
+//       }
       
-      // 等待展开动画
-      await delay(3000);
+//       // 等待展开动画
+//       await delay(3000);
       
-    } catch (e) {
-      sendLog('[自动填写] 点击失败: ' + e.message);
-    }
-    
-    // 等待卡片输入区域加载
-    await delay(3000);
-    
-    // 获取所有 iframe 并尝试在其中填写
-    sendLog('[自动填写] 填写卡片信息...');
-    
-    const frames = page.frames();
-    sendLog(`[自动填写] 找到 ${frames.length} 个 frame`);
-    
-    let cardFilled = false, expFilled = false, cvvFilled = false;
-    
-    for (const frame of frames) {
-      try {
-        // 卡号
-        if (!cardFilled) {
-          for (const sel of ['input[name="cardnumber"]', 'input[autocomplete="cc-number"]', 'input[data-elements-stable-field-name="cardNumber"]']) {
-            const el = await frame.$(sel);
-            if (el) {
-              await el.click();
-              await delay(100);
-              await el.type(card.cardNumber, { delay: 20 });
-              sendLog('[自动填写] ✓ 卡号已填写');
-              cardFilled = true;
-              break;
-            }
-          }
-        }
+//     } catch (e) {
+//       sendLog('[自动填写] 点击失败: ' + e.message);
+//     }
+
+//     // 等待卡片输入区域加载
+//     await delay(3000);
+
+//     // 获取所有 iframe 并尝试在其中填写
+//     sendLog('[自动填写] 填写卡片信息...');
+
+//     const frames = page.frames();
+//     sendLog(`[自动填写] 找到 ${frames.length} 个 frame`);
+
+//     let cardFilled = false, expFilled = false, cvvFilled = false;
+
+//     for (const frame of frames) {
+//       try {
+//         // 卡号
+//         if (!cardFilled) {
+//           for (const sel of ['input[name="cardnumber"]', 'input[autocomplete="cc-number"]', 'input[data-elements-stable-field-name="cardNumber"]']) {
+//             const el = await frame.$(sel);
+//             if (el) {
+//               await el.click();
+//               await delay(100);
+//               await el.type(card.cardNumber, { delay: 20 });
+//               sendLog('[自动填写] ✓ 卡号已填写');
+//               cardFilled = true;
+//               break;
+//             }
+//           }
+//         }
         
-        // 有效期
-        if (!expFilled) {
-          for (const sel of ['input[name="exp-date"]', 'input[autocomplete="cc-exp"]', 'input[data-elements-stable-field-name="cardExpiry"]']) {
-            const el = await frame.$(sel);
-            if (el) {
-              await el.click();
-              await delay(100);
-              await el.type(`${card.month}${card.year}`, { delay: 20 });
-              sendLog('[自动填写] ✓ 有效期已填写');
-              expFilled = true;
-              break;
-            }
-          }
-        }
+//         // 有效期
+//         if (!expFilled) {
+//           for (const sel of ['input[name="exp-date"]', 'input[autocomplete="cc-exp"]', 'input[data-elements-stable-field-name="cardExpiry"]']) {
+//             const el = await frame.$(sel);
+//             if (el) {
+//               await el.click();
+//               await delay(100);
+//               await el.type(`${card.month}${card.year}`, { delay: 20 });
+//               sendLog('[自动填写] ✓ 有效期已填写');
+//               expFilled = true;
+//               break;
+//             }
+//           }
+//         }
         
-        // CVV (确保3位)
-        if (!cvvFilled) {
-          const cvv3 = String(card.cvv).padStart(3, '0');
-          for (const sel of ['input[name="cvc"]', 'input[autocomplete="cc-csc"]', 'input[data-elements-stable-field-name="cardCvc"]']) {
-            const el = await frame.$(sel);
-            if (el) {
-              await el.click();
-              await delay(100);
-              await el.type(cvv3, { delay: 20 });
-              sendLog(`[自动填写] ✓ CVV已填写: ${cvv3}`);
-              cvvFilled = true;
-              break;
-            }
-          }
-        }
-      } catch (e) {}
-    }
-    
-    sendLog(`[自动填写] 卡片: 卡号=${cardFilled}, 有效期=${expFilled}, CVV=${cvvFilled}`);
-    
-    // 填写账单信息
-    sendLog('[自动填写] 填写账单信息...');
-    try {
-      await page.type('input[name="billingName"], input[placeholder*="Name"]', billing.name, { delay: 30 });
-      sendLog('[自动填写] ✓ 姓名已填写');
-    } catch (e) {}
-    
-    try {
-      // 国家选择
-      await page.select('select[name="billingCountry"]', billing.country);
-    } catch (e) {}
-    
-    // 等待国家选择后的页面更新
-    await delay(1000);
-    
-    try {
-      // 省/州选择
-      const province = billing.province || billing.state;
-      if (province) {
-        sendLog(`[自动填写] 选择省份: ${province}`);
-        await page.select('select[id="billingAdministrativeArea"], select[name="billingAdministrativeArea"]', province);
-        sendLog('[自动填写] ✓ 省份已选择');
-      }
-    } catch (e) {
-      sendLog('[自动填写] 省份选择失败: ' + e.message);
-    }
-    
-    try {
-      // 城市
-      if (billing.city) {
-        await page.type('input[name="billingLocality"], input[id="billingLocality"]', billing.city, { delay: 30 });
-        sendLog('[自动填写] ✓ 城市已填写');
-      }
-    } catch (e) {}
-    
-    try {
-      // 地区
-      if (billing.district) {
-        await page.type('input[id="billingDependentLocality"], input[name="billingDependentLocality"]', billing.district, { delay: 30 });
-        sendLog('[自动填写] ✓ 地区已填写');
-      }
-    } catch (e) {}
-    
-    try {
-      // 地址
-      if (billing.address) {
-        await page.type('input[name="billingAddressLine1"], input[id="billingAddressLine1"]', billing.address, { delay: 30 });
-        sendLog('[自动填写] ✓ 地址已填写');
-      }
-    } catch (e) {}
-    
-    try {
-      // 地址第2行
-      if (billing.address2) {
-        await page.type('input[id="billingAddressLine2"], input[name="billingAddressLine2"]', billing.address2, { delay: 30 });
-      }
-    } catch (e) {}
-    
-    try {
-      // 邮编
-      if (billing.postalCode) {
-        await page.type('input[name="billingPostalCode"], input[id="billingPostalCode"]', billing.postalCode, { delay: 30 });
-        sendLog('[自动填写] ✓ 邮编已填写');
-      }
-    } catch (e) {}
-    
-    console.log('[自动填写] 填写完成，请手动确认并提交');
-    
-    // 不关闭浏览器，让用户确认并提交
-    return { success: true };
-    
-  } catch (error) {
-    console.error('[自动填写] 失败:', error.message);
-    if (browser) {
-      try { await browser.close(); } catch (e) {}
-    }
-    return { success: false, error: error.message };
-  }
-});
+//         // CVV (确保3位)
+//         if (!cvvFilled) {
+//           const cvv3 = String(card.cvv).padStart(3, '0');
+//           for (const sel of ['input[name="cvc"]', 'input[autocomplete="cc-csc"]', 'input[data-elements-stable-field-name="cardCvc"]']) {
+//             const el = await frame.$(sel);
+//             if (el) {
+//               await el.click();
+//               await delay(100);
+//               await el.type(cvv3, { delay: 20 });
+//               sendLog(`[自动填写] ✓ CVV已填写: ${cvv3}`);
+//               cvvFilled = true;
+//               break;
+//             }
+//           }
+//         }
+//       } catch (e) {}
+//     }
+
+//     sendLog(`[自动填写] 卡片: 卡号=${cardFilled}, 有效期=${expFilled}, CVV=${cvvFilled}`);
+
+//     // 填写账单信息
+//     sendLog('[自动填写] 填写账单信息...');
+//     try {
+//       await page.type('input[name="billingName"], input[placeholder*="Name"]', billing.name, { delay: 30 });
+//       sendLog('[自动填写] ✓ 姓名已填写');
+//     } catch (e) {}
+
+//     try {
+//       // 国家选择
+//       await page.select('select[name="billingCountry"]', billing.country);
+//     } catch (e) {}
+
+//     // 等待国家选择后的页面更新
+//     await delay(1000);
+
+//     try {
+//       // 省/州选择
+//       const province = billing.province || billing.state;
+//       if (province) {
+//         sendLog(`[自动填写] 选择省份: ${province}`);
+//         await page.select('select[id="billingAdministrativeArea"], select[name="billingAdministrativeArea"]', province);
+//         sendLog('[自动填写] ✓ 省份已选择');
+//       }
+//     } catch (e) {
+//       sendLog('[自动填写] 省份选择失败: ' + e.message);
+//     }
+
+//     try {
+//       // 城市
+//       if (billing.city) {
+//         await page.type('input[name="billingLocality"], input[id="billingLocality"]', billing.city, { delay: 30 });
+//         sendLog('[自动填写] ✓ 城市已填写');
+//       }
+//     } catch (e) {}
+
+//     try {
+//       // 地区
+//       if (billing.district) {
+//         await page.type('input[id="billingDependentLocality"], input[name="billingDependentLocality"]', billing.district, { delay: 30 });
+//         sendLog('[自动填写] ✓ 地区已填写');
+//       }
+//     } catch (e) {}
+
+//     try {
+//       // 地址
+//       if (billing.address) {
+//         await page.type('input[name="billingAddressLine1"], input[id="billingAddressLine1"]', billing.address, { delay: 30 });
+//         sendLog('[自动填写] ✓ 地址已填写');
+//       }
+//     } catch (e) {}
+
+//     try {
+//       // 地址第2行
+//       if (billing.address2) {
+//         await page.type('input[id="billingAddressLine2"], input[name="billingAddressLine2"]', billing.address2, { delay: 30 });
+//       }
+//     } catch (e) {}
+
+//     try {
+//       // 邮编
+//       if (billing.postalCode) {
+//         await page.type('input[name="billingPostalCode"], input[id="billingPostalCode"]', billing.postalCode, { delay: 30 });
+//         sendLog('[自动填写] ✓ 邮编已填写');
+//       }
+//     } catch (e) {}
+
+//     console.log('[自动填写] 填写完成，请手动确认并提交');
+
+//     // 不关闭浏览器，让用户确认并提交
+//     return { success: true };
+
+//   } catch (error) {
+//     console.error('[自动填写] 失败:', error.message);
+//     if (browser) {
+//       try { await browser.close(); } catch (e) {}
+//     }
+//     return { success: false, error: error.message };
+//   }
+// });
 
 
-// ==================== 批量注册 ====================
+// // ==================== 批量注册 ====================
 
-// 批量注册账号
-ipcMain.handle('batch-register', async (event, config) => {
-  // 使用 JavaScript 版本注册机器人
-  const RegistrationBot = require(path.join(__dirname, 'src', 'registrationBot'));
-  console.log('使用 JavaScript 版本注册机器人');
+// // 批量注册账号
+// ipcMain.handle('batch-register', async (event, config) => {
+//   // 使用 JavaScript 版本注册机器人
+//   const RegistrationBot = require(path.join(__dirname, 'src', 'registrationBot'));
+//   console.log('使用 JavaScript 版本注册机器人');
   
-  // 创建保存账号的回调函数
-  const saveAccountCallback = async (account) => {
-    return await accountsFileLock.acquire(async () => {
-      try {
-        // 验证账号数据
-        if (!account || !account.email || !account.password) {
-          return { success: false, error: '账号数据不完整，缺少邮箱或密码' };
-        }
+//   // 创建保存账号的回调函数
+//   const saveAccountCallback = async (account) => {
+//     return await accountsFileLock.acquire(async () => {
+//       try {
+//         // 验证账号数据
+//         if (!account || !account.email || !account.password) {
+//           return { success: false, error: '账号数据不完整，缺少邮箱或密码' };
+//         }
         
-        // 规范化路径（跨平台兼容）
-        const accountsFilePath = path.normalize(ACCOUNTS_FILE);
-        const accountsDir = path.dirname(accountsFilePath);
+//         // 规范化路径（跨平台兼容）
+//         const accountsFilePath = path.normalize(ACCOUNTS_FILE);
+//         const accountsDir = path.dirname(accountsFilePath);
         
-        // 确保目录存在
-        await fs.mkdir(accountsDir, { recursive: true });
+//         // 确保目录存在
+//         await fs.mkdir(accountsDir, { recursive: true });
         
-        let accounts = [];
-        try {
-          const data = await fs.readFile(accountsFilePath, 'utf-8');
-          accounts = JSON.parse(data);
-          if (!Array.isArray(accounts)) {
-            accounts = [];
-          }
-        } catch (error) {
-          if (error.code !== 'ENOENT') {
-            console.error('读取账号文件失败:', error.message);
-          }
-          accounts = [];
-        }
+//         let accounts = [];
+//         try {
+//           const data = await fs.readFile(accountsFilePath, 'utf-8');
+//           accounts = JSON.parse(data);
+//           if (!Array.isArray(accounts)) {
+//             accounts = [];
+//           }
+//         } catch (error) {
+//           if (error.code !== 'ENOENT') {
+//             console.error('读取账号文件失败:', error.message);
+//           }
+//           accounts = [];
+//         }
         
-        // 检查是否已存在相同邮箱
-        const normalizedEmail = account.email.toLowerCase().trim();
-        const existingAccount = accounts.find(acc => 
-          acc.email && acc.email.toLowerCase().trim() === normalizedEmail
-        );
-        if (existingAccount) {
-          return { success: false, error: `账号 ${account.email} 已存在` };
-        }
+//         // 检查是否已存在相同邮箱
+//         const normalizedEmail = account.email.toLowerCase().trim();
+//         const existingAccount = accounts.find(acc =>
+//           acc.email && acc.email.toLowerCase().trim() === normalizedEmail
+//         );
+//         if (existingAccount) {
+//           return { success: false, error: `账号 ${account.email} 已存在` };
+//         }
         
-        // 添加ID和创建时间
-        account.id = Date.now().toString();
-        account.createdAt = new Date().toISOString();
-        accounts.push(account);
+//         // 添加ID和创建时间
+//         account.id = Date.now().toString();
+//         account.createdAt = new Date().toISOString();
+//         accounts.push(account);
         
-        // 先创建备份
-        if (accounts.length > 0) {
-          try {
-            await fs.writeFile(accountsFilePath + '.backup', JSON.stringify(accounts, null, 2), { encoding: 'utf-8' });
-          } catch (backupError) {
-            console.warn('创建备份失败:', backupError.message);
-          }
-        }
+//         // 先创建备份
+//         if (accounts.length > 0) {
+//           try {
+//             await fs.writeFile(accountsFilePath + '.backup', JSON.stringify(accounts, null, 2), { encoding: 'utf-8' });
+//           } catch (backupError) {
+//             console.warn('创建备份失败:', backupError.message);
+//           }
+//         }
         
-        // 保存文件
-        await fs.writeFile(accountsFilePath, JSON.stringify(accounts, null, 2), { encoding: 'utf-8' });
-        console.log(`账号已添加: ${account.email} (总数: ${accounts.length})`);
+//         // 保存文件
+//         await fs.writeFile(accountsFilePath, JSON.stringify(accounts, null, 2), { encoding: 'utf-8' });
+//         console.log(`账号已添加: ${account.email} (总数: ${accounts.length})`);
         
-        return { success: true, account };
-      } catch (error) {
-        console.error('添加账号失败:', error);
-        return { success: false, error: `添加失败: ${error.message}` };
-      }
-    });
-  };
+//         return { success: true, account };
+//       } catch (error) {
+//         console.error('添加账号失败:', error);
+//         return { success: false, error: `添加失败: ${error.message}` };
+//       }
+//     });
+//   };
   
-  const bot = new RegistrationBot(config, saveAccountCallback);
-  currentRegistrationBot = bot;
+//   const bot = new RegistrationBot(config, saveAccountCallback);
+//   currentRegistrationBot = bot;
   
-  try {
-    return await bot.batchRegister(config.count, config.threads || 4, (progress) => {
-      if (mainWindow && !mainWindow.isDestroyed()) {
-        mainWindow.webContents.send('registration-progress', progress);
-      }
-    }, (log) => {
-      // 同时输出到控制台
-      console.log(log);
-      // 发送实时日志到前端
-      if (mainWindow && !mainWindow.isDestroyed()) {
-        mainWindow.webContents.send('registration-log', { message: log, type: 'info' });
-      }
-    });
-  } finally {
-    currentRegistrationBot = null;
-  }
-});
+//   try {
+//     return await bot.batchRegister(config.count, config.threads || 4, (progress) => {
+//       if (mainWindow && !mainWindow.isDestroyed()) {
+//         mainWindow.webContents.send('registration-progress', progress);
+//       }
+//     }, (log) => {
+//       // 同时输出到控制台
+//       console.log(log);
+//       // 发送实时日志到前端
+//       if (mainWindow && !mainWindow.isDestroyed()) {
+//         mainWindow.webContents.send('registration-log', { message: log, type: 'info' });
+//       }
+//     });
+//   } finally {
+//     currentRegistrationBot = null;
+//   }
+// });
 
-// 取消批量注册（跨平台：mac / Windows / Linux）
-ipcMain.handle('cancel-batch-register', async () => {
-  try {
-    const logCallback = (log) => {
-      if (mainWindow && !mainWindow.isDestroyed()) {
-        mainWindow.webContents.send('registration-log', log);
-      }
-    };
+// // 取消批量注册（跨平台：mac / Windows / Linux）
+// ipcMain.handle('cancel-batch-register', async () => {
+//   try {
+//     const logCallback = (log) => {
+//       if (mainWindow && !mainWindow.isDestroyed()) {
+//         mainWindow.webContents.send('registration-log', log);
+//       }
+//     };
 
-    // 使用统一的 BrowserKiller 工具关闭浏览器进程
-    const BrowserKiller = require('./src/registrationBotCancel');
-    await BrowserKiller.cancelBatchRegistration(currentRegistrationBot, logCallback);
-    
-    // 清空当前注册实例
-    currentRegistrationBot = null;
-    
-    return {
-      success: true,
-      message: '批量注册已取消'
-    };
-  } catch (error) {
-    console.error('取消批量注册失败:', error);
-    return {
-      success: false,
-      message: error.message
-    };
-  }
-});
+//     // 使用统一的 BrowserKiller 工具关闭浏览器进程
+//     const BrowserKiller = require('./src/registrationBotCancel');
+//     await BrowserKiller.cancelBatchRegistration(currentRegistrationBot, logCallback);
+
+//     // 清空当前注册实例
+//     currentRegistrationBot = null;
+
+//     return {
+//       success: true,
+//       message: '批量注册已取消'
+//     };
+//   } catch (error) {
+//     console.error('取消批量注册失败:', error);
+//     return {
+//       success: false,
+//       message: error.message
+//     };
+//   }
+// });
 
 // 获取当前登录信息（从 vscdb 读取）
 ipcMain.handle('get-current-login', async () => {
